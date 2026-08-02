@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formularios CEH</title>
+<style>
+  :root {
+    --paper: #f6f4ef; --ink: #1f2a24; --line: #c9c2b3;
+    --accent: #2f5d50; --accent-soft: #e4ece8; --danger: #8a3b2b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Iowan Old Style', 'Georgia', serif; padding-bottom: 60px;
+  }
+  header { padding: 32px 20px 20px; border-bottom: 2px solid var(--ink); }
+  header .kicker {
+    font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  header h1 { margin: 8px 0 6px; font-size: 26px; line-height: 1.25; }
+  header p { margin: 0; font-size: 14px; color: #5a5347; font-family: -apple-system, sans-serif; max-width: 520px; }
+
+  main { max-width: 720px; margin: 0 auto; padding: 22px 16px; }
+
+  h2.section-title {
+    font-size: 15px; font-family: -apple-system, sans-serif; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent);
+    margin: 28px 0 12px;
+  }
+  h2.section-title:first-child { margin-top: 0; }
+
+  .cards { display: grid; gap: 12px; }
+  .card {
+    display: flex; align-items: center; gap: 14px;
+    background: #fffdf9; border: 1px solid var(--line); border-radius: 6px;
+    padding: 16px; text-decoration: none; color: var(--ink);
+  }
+  .card .code {
+    font-family: 'Courier New', monospace; font-size: 12px; color: #fff;
+    background: var(--accent); padding: 4px 8px; border-radius: 4px; flex-shrink: 0;
+  }
+  .card .info { flex: 1; }
+  .card .info .name { font-weight: 600; font-size: 16px; }
+  .card .info .desc {
+    font-family: -apple-system, sans-serif; font-size: 12.5px; color: #5a5347; margin-top: 2px;
+  }
+  .card .arrow { font-size: 20px; color: var(--accent); }
+
+  .hist-list { display: grid; gap: 8px; }
+  .hist-item {
+    display: flex; align-items: center; gap: 12px;
+    background: #fffdf9; border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px;
+    font-family: -apple-system, sans-serif;
+  }
+  .hist-item .badge {
+    font-size: 10.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft);
+    padding: 3px 7px; border-radius: 3px; flex-shrink: 0; white-space: nowrap;
+  }
+  .hist-item .hinfo { flex: 1; min-width: 0; }
+  .hist-item .hname { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hist-item .hdate { font-size: 11.5px; color: #8a8375; }
+  .hist-item button {
+    font-family: -apple-system, sans-serif; font-size: 12.5px; font-weight: 600;
+    padding: 7px 10px; border-radius: 4px; border: none; cursor: pointer;
+    background: var(--accent-soft); color: var(--accent); flex-shrink: 0;
+  }
+  .hist-item button.del { background: none; color: var(--danger); font-size: 16px; padding: 4px 6px; }
+
+  .empty-state {
+    font-family: -apple-system, sans-serif; font-size: 13px; color: #8a8375;
+    text-align: center; padding: 24px 12px; border: 1px dashed var(--line); border-radius: 6px;
+  }
+
+  .hist-groups { display: grid; gap: 10px; }
+  .hist-group {
+    background: #fffdf9; border: 1px solid var(--line); border-radius: 6px;
+  }
+  .hist-group summary {
+    list-style: none; cursor: pointer; padding: 14px 16px;
+    font-family: -apple-system, sans-serif; font-weight: 600; font-size: 14.5px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hist-group summary::-webkit-details-marker { display: none; }
+  .hist-group summary .code {
+    font-family: 'Courier New', monospace; font-size: 11px; color: #fff;
+    background: var(--accent); padding: 3px 7px; border-radius: 3px;
+  }
+  .hist-container { padding: 0 16px 14px; }
+
+  .privacy-note {
+    margin-top: 22px; padding: 12px 14px; background: var(--accent-soft); border-radius: 6px;
+    font-family: -apple-system, sans-serif; font-size: 12px; color: var(--accent); line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Comité de Enlace con los Hospitales</div>
+  <h1>Formularios</h1>
+  <p>Completá cualquiera de los formularios y generá el PDF con el mismo diseño del original. Todo se guarda solo en este celular — nada se sube a internet.</p>
+</header>
+
+<main>
+  <h2 class="section-title">Formularios disponibles</h2>
+  <div class="cards">
+    <a class="card" href="hlc20_prototipo.html">
+      <span class="code">hlc-20-S</span>
+      <span class="info">
+        <span class="name">Solicitud de alojamiento</span>
+        <span class="desc">Necesidades médicas especiales</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+    <a class="card" href="hlc07_prototipo.html">
+      <span class="code">hlc-07-S</span>
+      <span class="info">
+        <span class="name">Hoja de trabajo</span>
+        <span class="desc">Emergencias médicas</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+    <a class="card" href="hlc31_prototipo.html">
+      <span class="code">hlc-31-S</span>
+      <span class="info">
+        <span class="name">Datos de contacto</span>
+        <span class="desc">Para el CEH</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+  </div>
+
+  <h2 class="section-title">Historial</h2>
+  <div class="hist-groups">
+    <details class="hist-group">
+      <summary><span class="code">hlc-20-S</span> Solicitud de alojamiento</summary>
+      <div id="hist-hlc-20-S" class="hist-container"></div>
+    </details>
+    <details class="hist-group">
+      <summary><span class="code">hlc-07-S</span> Hoja de trabajo</summary>
+      <div id="hist-hlc-07-S" class="hist-container"></div>
+    </details>
+    <details class="hist-group">
+      <summary><span class="code">hlc-31-S</span> Datos de contacto</summary>
+      <div id="hist-hlc-31-S" class="hist-container"></div>
+    </details>
+  </div>
+
+  <div class="privacy-note">
+    🔒 El historial se guarda únicamente en la memoria de este celular (localStorage del navegador). No se envía a ningún servidor. Si borrás los datos del navegador o cambiás de celular, se pierde — no hay copia en la nube.
+  </div>
+</main>
+
+<script>
+const HIST_KEY = 'hlc_historial_v1';
+
+function fmtFecha(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+         ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function b64ToBlob(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: 'application/pdf' });
+}
+
+function render() {
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch (e) { hist = []; }
+
+  const tipos = ['hlc-20-S', 'hlc-07-S', 'hlc-31-S'];
+  tipos.forEach(tipo => {
+    const container = document.getElementById('hist-' + tipo);
+    const items = hist.filter(r => r.formType === tipo);
+
+    if (items.length === 0) {
+      container.innerHTML = '<div class="empty-state">Todavía no generaste ningún ' + tipo + '.</div>';
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'hist-list';
+    items.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'hist-item';
+      item.innerHTML = `
+        <span class="hinfo">
+          <span class="hname">${r.label}</span><br>
+          <span class="hdate">${fmtFecha(r.date)}</span>
+        </span>
+        <button data-action="download" data-id="${r.id}">Descargar</button>
+        <button data-action="delete" data-id="${r.id}" class="del">✕</button>
+      `;
+      list.appendChild(item);
+    });
+    container.innerHTML = '';
+    container.appendChild(list);
+
+    container.querySelectorAll('button[data-action="download"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const r = hist.find(x => x.id === btn.dataset.id);
+        if (!r) return;
+        const url = URL.createObjectURL(b64ToBlob(r.pdfBase64));
+        const a = document.createElement('a');
+        a.href = url; a.download = r.filename; a.click();
+      });
+    });
+    container.querySelectorAll('button[data-action="delete"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        let h = [];
+        try { h = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch (e) { h = []; }
+        h = h.filter(x => x.id !== btn.dataset.id);
+        localStorage.setItem(HIST_KEY, JSON.stringify(h));
+        render();
+      });
+    });
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
