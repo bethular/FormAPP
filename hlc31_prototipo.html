@@ -41,9 +41,12 @@
   .phone-row { display: flex; gap: 6px; }
   .phone-row input { flex: 1; }
   .wa-btn {
-    flex-shrink: 0; width: 42px; font-size: 18px; padding: 0;
-    border: 1px solid var(--line); border-radius: 3px; background: #fff; cursor: pointer;
+    flex-shrink: 0; width: 42px; height: 42px; padding: 0;
+    border: none; border-radius: 50%; background: #25D366; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
+  .wa-btn svg { width: 20px; height: 20px; fill: #fff; }
+  .wa-btn:active { background: #1ea952; }
   .actions { position: sticky; bottom: 0; background: var(--paper); border-top: 2px solid var(--ink); padding: 14px 16px; display: flex; gap: 10px; max-width: 720px; margin: 0 auto; }
   button { font-family: -apple-system, sans-serif; font-weight: 600; font-size: 15px; padding: 13px 16px; border-radius: 4px; border: none; cursor: pointer; flex: 1; }
   #generar { background: var(--accent); color: #fff; }
@@ -101,8 +104,8 @@
       <div class="grid">
         <label class="fld"><span>Nombre</span><input type="text" autocomplete="off" data-field="900_10_Text_SanSerif" data-type="text"></label>
 <label class="fld"><span>Apellidos</span><input type="text" autocomplete="off" data-field="900_11_Text_SanSerif" data-type="text"></label>
-<div class="fld"><span>Teléfono fijo</span><div class="phone-row"><input type="text" inputmode="tel" autocomplete="off" data-field="900_12_Text_SanSerif" data-type="text"><button type="button" class="wa-btn" title="Abrir en WhatsApp">💬</button></div></div>
-<div class="fld"><span>Teléfono móvil</span><div class="phone-row"><input type="text" inputmode="tel" autocomplete="off" data-field="900_13_Text_SanSerif" data-type="text"><button type="button" class="wa-btn" title="Abrir en WhatsApp">💬</button></div></div>
+<div class="fld"><span>Teléfono fijo</span><div class="phone-row"><input type="text" inputmode="tel" autocomplete="off" data-field="900_12_Text_SanSerif" data-type="text"><button type="button" class="wa-btn" title="Abrir en WhatsApp" aria-label="Abrir en WhatsApp"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button></div></div>
+<div class="fld"><span>Teléfono móvil</span><div class="phone-row"><input type="text" inputmode="tel" autocomplete="off" data-field="900_13_Text_SanSerif" data-type="text"><button type="button" class="wa-btn" title="Abrir en WhatsApp" aria-label="Abrir en WhatsApp"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button></div></div>
 <label class="fld"><span>Correo electrónico</span><input type="text" autocomplete="off" data-field="900_14_Text_SanSerif" data-type="text"></label>
 <div class="fld fld-row"><span>Género</span><div class="radio2" data-field="900_15_Text_SanSerif" data-type="radio2-text"><label class="chk"><input type="checkbox" data-radio-value="Masculino"><span>Masculino</span></label><label class="chk"><input type="checkbox" data-radio-value="Femenino"><span>Femenino</span></label></div></div>
 <div class="row-group">
@@ -228,7 +231,8 @@ document.querySelectorAll('.wa-btn').forEach(btn => {
     const input = btn.parentElement.querySelector('input');
     const digits = (input.value || '').replace(/\D/g, '');
     if (!digits) { alert('Cargá un número de teléfono primero.'); return; }
-    window.open('https://wa.me/' + digits, '_blank');
+    const abrir = confirm('¿Querés abrir este contacto en WhatsApp?');
+    if (abrir) { window.open('https://wa.me/' + digits, '_blank'); }
   });
 });
 
