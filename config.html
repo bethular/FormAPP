@@ -1,5 +1,5 @@
+<!-- FormAPP config.html version 1.2 — menú y cancelar bloqueo pendiente -->
 <!DOCTYPE html>
-<!-- config.html version 1.1 — cancelar bloqueo pendiente -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -170,7 +170,10 @@
 <body>
 
 <header>
-  <a class="back" href="menu.html">‹ Volver</a>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <a class="back" href="menu.html">‹ Volver</a>
+    <a class="back" href="menu.html" aria-label="Abrir menú">☰ Menú</a>
+  </div>
   <h1>Panel de administración</h1>
   <p>Acá aprobás a las personas nuevas que se registran en la app.</p>
 </header>
@@ -582,6 +585,7 @@ async function cargar() {
             Vos la propusiste — esperando que confirmen los demás administradores.
           </div>
         `;
+
         if (s.tipo === 'restringir_acceso' || s.tipo === 'desvincular') {
           html += `
             <div class="btns">
