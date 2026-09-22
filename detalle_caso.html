@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detalle del caso — Comité de Enlace con los Hospitales</title>
+<style>
+  :root {
+    --paper: #f6f4ef; --ink: #1f2a24; --line: #c9c2b3;
+    --accent: #2f5d50; --accent-soft: #e4ece8; --danger: #8a3b2b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Iowan Old Style', 'Georgia', serif; padding-bottom: 90px; }
+  header { padding: 24px 20px 16px; border-bottom: 2px solid var(--ink); }
+  .back-link { display: inline-block; margin-bottom: 8px; font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; cursor: pointer; }
+  header .kicker { font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  header h1 { margin: 6px 0 6px; font-size: 20px; }
+  .estado-row { display: flex; align-items: center; gap: 8px; font-family: -apple-system, sans-serif; }
+  .estado-row .label { font-size: 12.5px; color: #5a5347; }
+  .estado-pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+  .estado-activo { background: var(--accent-soft); color: var(--accent); }
+  .estado-seguimiento { background: #f6e9df; color: var(--danger); }
+  .estado-cerrado { background: #ece9e2; color: #5a5347; }
+  .estado-select {
+    margin-left: auto; font-family: -apple-system, sans-serif; font-size: 12.5px; font-weight: 700;
+    padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink);
+  }
+  .btn-borrar {
+    font-family: -apple-system, sans-serif; font-size: 12px; font-weight: 700;
+    padding: 5px 10px; border-radius: 10px; border: 1px solid var(--danger); background: #fff;
+    color: var(--danger); cursor: pointer;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 16px; }
+  .entrada { display: flex; gap: 10px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .entrada:last-child { border-bottom: none; margin-bottom: 0; }
+  .badge {
+    width: 24px; height: 24px; border-radius: 4px; background: var(--accent); color: #fff;
+    font-family: 'Courier New', monospace; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .entrada-body { flex: 1; font-family: -apple-system, sans-serif; }
+  .entrada-body .meta { font-size: 12px; color: #5a5347; margin: 0 0 3px; }
+  .entrada-body .texto { font-size: 14.5px; margin: 0 0 8px; }
+  .entrada-editable { cursor: pointer; border-radius: 4px; margin: -4px; padding: 4px; }
+  .entrada-editable:active { background: var(--accent-soft); }
+  .entrada-borrar { margin-left:auto; align-self:flex-start; border:0; background:transparent; color:var(--danger); cursor:pointer; font-size:16px; padding:4px 2px; }
+  .entrada-borrar:active { opacity:.65; }
+  .archivos { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
+  .archivo-item { display: flex; align-items: center; gap: 14px; }
+  .archivo-thumb {
+    width: 64px; height: 64px; border-radius: 6px; background: #fff; border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; font-size: 26px; cursor: pointer; flex-shrink: 0;
+  }
+  .archivo-acciones {
+    display: flex; align-items: center; gap: 10px; margin-left: auto;
+  }
+  .archivo-borrar, .archivo-compartir {
+    display: none; width: 40px; height: 40px; border-radius: 50%; border: none; color: #fff; line-height: 1;
+    align-items: center; justify-content: center; cursor: pointer; padding: 0; flex-shrink: 0;
+  }
+  .archivo-borrar { background: var(--danger); }
+  .archivo-compartir { background: var(--accent); }
+  body.modo-borrar .archivo-borrar { display: flex; }
+  body.modo-compartir .archivo-compartir { display: flex; }
+  .visor-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .visor-overlay.open { display: flex; }
+  .visor-caja { background: #fff; border-radius: 8px; max-width: 480px; width: 100%; padding: 16px; font-family: -apple-system, sans-serif; max-height: 85vh; overflow: auto; }
+  .visor-caja img, .visor-caja iframe { width: 100%; border-radius: 4px; border: 1px solid var(--line); }
+  .visor-caja iframe { height: 60vh; }
+  .visor-caja a.descarga { display: inline-block; margin-top: 8px; color: var(--accent); font-weight: 600; }
+  .visor-cerrar { margin-top: 12px; width: 100%; padding: 10px; border-radius: 4px; border: none; background: var(--ink); color: #fff; font-weight: 600; cursor: pointer; }
+  .fab-wrap { position: fixed; right: 20px; bottom: 20px; z-index: 90; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .fab-btn {
+    width: 60px; height: 60px; border-radius: 50%; border: none; background: var(--ink); color: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+  .fab-menu {
+    display: none; flex-direction: column; align-items: flex-end; gap: 8px; margin-bottom: 4px;
+  }
+  .fab-wrap.open .fab-menu { display: flex; }
+  .fab-item {
+    font-family: -apple-system, sans-serif; font-weight: 600; font-size: 13.5px; padding: 11px 16px;
+    border-radius: 20px; border: none; cursor: pointer; background: #fff; color: var(--ink);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2); white-space: nowrap;
+  }
+  #btn-agregar { background: var(--accent); color: #fff; }
+  #btn-modo-compartir.activo { background: var(--accent); color: #fff; }
+  #btn-modo-borrar.activo { background: var(--danger); color: #fff; }
+  .vacio { text-align: center; padding: 30px 16px; font-family: -apple-system, sans-serif; font-size: 13.5px; color: #5a5347; }
+
+  .adjuntar-caja { background: #fff; border-radius: 8px; max-width: 480px; width: 100%; padding: 18px; font-family: -apple-system, sans-serif; max-height: 88vh; overflow: auto; }
+  .adjuntar-caja h3 { margin: 0 0 4px; font-family: 'Iowan Old Style', Georgia, serif; }
+  .adjuntar-caja .sub { font-size: 12.5px; color: #5a5347; margin: 0 0 14px; }
+  .adjuntar-caja label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 5px; }
+  .adjuntar-caja textarea {
+    width: 100%; min-height: 70px; padding: 10px; border: 1px solid var(--line); border-radius: 5px;
+    font-family: -apple-system, sans-serif; font-size: 14px; resize: vertical;
+  }
+  .adjuntar-caja input[type=file] { width: 100%; font-size: 13px; }
+  .audio-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btn-grabar {
+    font-family: -apple-system, sans-serif; font-weight: 600; font-size: 13.5px; padding: 9px 14px;
+    border-radius: 20px; border: 1px solid var(--danger); background: #fff; color: var(--danger); cursor: pointer;
+  }
+  .btn-grabar.grabando { background: var(--danger); color: #fff; }
+  .audio-row audio { max-width: 220px; height: 32px; }
+  .btn-quitar-audio { background: none; border: none; color: var(--danger); font-size: 12.5px; cursor: pointer; text-decoration: underline; }
+  .adjuntar-status { font-size: 12.5px; margin-top: 10px; min-height: 16px; }
+  .adjuntar-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .adjuntar-actions button {
+    flex: 1; padding: 11px; border-radius: 5px; font-family: -apple-system, sans-serif; font-weight: 600;
+    font-size: 14px; cursor: pointer; border: none;
+  }
+  #adjuntar-cancelar { background: var(--paper); color: var(--ink); border: 1px solid var(--line) !important; }
+  #adjuntar-guardar { background: var(--accent); color: #fff; }
+  #adjuntar-guardar:disabled { opacity: 0.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back-link" onclick="window.location.href='menu.html?tab=casos'">‹ Volver a casos</a>
+  <div class="kicker">Comité de Enlace con los Hospitales</div>
+  <h1 id="nombre-paciente">—</h1>
+  <div class="estado-row">
+    <span class="label">Estado</span>
+    <select class="estado-select" id="estado-select"></select>
+    <button class="btn-borrar" id="btn-borrar-expediente" style="display:none;">🗑️ Borrar expediente</button>
+  </div>
+</header>
+
+<main id="timeline">
+  <div class="vacio">Cargando caso...</div>
+</main>
+
+<div class="visor-overlay" id="visor-overlay">
+  <div class="visor-caja">
+    <div id="visor-contenido"></div>
+    <button class="visor-cerrar" id="visor-cerrar">Cerrar</button>
+  </div>
+</div>
+
+<div class="fab-wrap" id="fab-wrap">
+  <div class="fab-menu" id="fab-menu">
+    <button type="button" class="fab-item" id="btn-modo-borrar">🗑️ Borrar archivos</button>
+    <button type="button" class="fab-item" id="btn-modo-compartir">↗ Compartir archivos</button>
+    <button type="button" class="fab-item" id="btn-adjuntar">＋ Adjuntar archivo, foto, audio o nota</button>
+    <button type="button" class="fab-item" id="btn-agregar">Nuevo HLC-07-S</button>
+  </div>
+  <button type="button" class="fab-btn" id="fab-btn" aria-label="Menú de acciones" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+  </button>
+</div>
+
+<div class="visor-overlay" id="adjuntar-overlay">
+  <div class="adjuntar-caja">
+    <h3>Agregar al expediente</h3>
+    <p class="sub">Fotos, PDFs, un audio o solo un comentario — no reemplaza al hlc-07-S, es para sumar información suelta.</p>
+
+    <label>Comentario (opcional)</label>
+    <textarea id="adjuntar-comentario" placeholder="Ej: la familia avisó que se cambia de hospital..."></textarea>
+
+    <label>Archivos (opcional)</label>
+    <input type="file" id="adjuntar-archivos" multiple>
+
+    <label>Audio (opcional)</label>
+    <div class="audio-row">
+      <button type="button" class="btn-grabar" id="btn-grabar">🎙️ Grabar audio</button>
+      <span id="audio-preview-wrap"></span>
+    </div>
+
+    <div class="adjuntar-status" id="adjuntar-status"></div>
+
+    <div class="adjuntar-actions">
+      <button type="button" id="adjuntar-cancelar">Cancelar</button>
+      <button type="button" id="adjuntar-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://abchojqugeywrzqktgpm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2hvanF1Z2V5d3J6cWt0Z3BtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NjkyMTMsImV4cCI6MjEwMzI0NTIxM30.VjbcoWi-F3QwN5tTjmmO6mcMhZVdSI_6X7qdxoK694E";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Nombre del bucket de Storage donde se guardan los adjuntos de los casos.
+// Si todavía no lo creaste en Supabase (Storage → New bucket), creá uno con este nombre exacto.
+const BUCKET_ADJUNTOS = 'casos-adjuntos';
+
+const casoId = new URLSearchParams(window.location.search).get('id');
+
+let CASO = null;
+
+function claseEstado(estado) {
+  if (estado === 'Activo') return 'estado-activo';
+  if (estado === 'En seguimiento') return 'estado-seguimiento';
+  return 'estado-cerrado';
+}
+
+function formatFechaHora(fechaISO) {
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const d = new Date(fechaISO);
+  return `${d.getDate()} ${meses[d.getMonth()]}`;
+}
+
+function codigoOrigen(origen) {
+  if (origen === 'manual') return '＋';
+  const m = origen.match(/\d+/);
+  return m ? m[0] : '—';
+}
+
+// Texto genérico según el origen de la entrada. Para "manual" se muestra el comentario cargado, si hay.
+function textoEntrada(e) {
+  if (e.origen === 'manual') {
+    return (e.datos && e.datos.comentario) ? e.datos.comentario : 'Archivo adjunto';
+  }
+  return e.origen === 'hlc-20-S' ? 'HLC-20-S — Formulario guardado (tocá para abrir)' : 'HLC-07-S — Formulario guardado (tocá para abrir)';
+}
+
+function iconoTipo(tipo) {
+  if (tipo === 'pdf') return '📄';
+  if (tipo === 'imagen') return '🖼️';
+  if (tipo === 'audio') return '🎙️';
+  return '📎';
+}
+
+async function cargarCaso() {
+  const { data: caso, error: errorCaso } = await sb
+    .from('casos')
+    .select('id, estado, personas(nombre_completo)')
+    .eq('id', casoId)
+    .single();
+
+  if (errorCaso || !caso) {
+    document.getElementById('timeline').innerHTML =
+      `<div class="vacio">No se pudo cargar el caso${errorCaso ? ': ' + errorCaso.message : ''}.</div>`;
+    return null;
+  }
+
+  const { data: entradas, error: errorEntradas } = await sb
+    .from('entradas')
+    .select('id, fecha, origen, datos, profiles(nombre, apellido), archivos(id, nombre_original, ruta_storage, tipo)')
+    .eq('caso_id', casoId)
+    .order('fecha', { ascending: true });
+
+  if (errorEntradas) {
+    document.getElementById('timeline').innerHTML = `<div class="vacio">No se pudieron cargar las entradas: ${errorEntradas.message}</div>`;
+    return null;
+  }
+
+  return {
+    id: caso.id,
+    nombre: caso.personas ? caso.personas.nombre_completo : '(sin nombre)',
+    estado: caso.estado,
+    entradas: entradas || []
+  };
+}
+
+function render() {
+  document.getElementById('nombre-paciente').textContent = CASO.nombre;
+  const sel = document.getElementById('estado-select');
+  sel.innerHTML = ['Activo', 'En seguimiento', 'Cerrado'].map(e =>
+    `<option value="${e}" ${e === CASO.estado ? 'selected' : ''}>${e}</option>`
+  ).join('');
+
+  const btnAgregar = document.getElementById('btn-agregar');
+  btnAgregar.style.display = (CASO.estado === 'Cerrado') ? 'none' : '';
+
+  const timeline = document.getElementById('timeline');
+  if (CASO.entradas.length === 0) {
+    timeline.innerHTML = '<div class="vacio">Este caso todavía no tiene entradas.</div>';
+    return;
+  }
+
+  timeline.innerHTML = CASO.entradas.map(e => {
+    const autor = e.profiles ? `${e.profiles.nombre} ${e.profiles.apellido}` : '(autor desconocido)';
+    const archivosHtml = (e.archivos || []).length ? `<div class="archivos">${e.archivos.map(a =>
+      `<div class="archivo-item">
+        <div class="archivo-thumb" data-archivo-id="${a.id}">${iconoTipo(a.tipo)}</div>
+        <div class="archivo-acciones">
+          <button type="button" class="archivo-compartir" data-compartir-archivo="${a.id}" title="Compartir este archivo" aria-label="Compartir este archivo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>
+          <button type="button" class="archivo-borrar" data-borrar-archivo="${a.id}" data-ruta="${a.ruta_storage}" title="Eliminar este adjunto" aria-label="Eliminar este adjunto"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
+        </div>
+      </div>`
+    ).join('')}</div>` : '';
+    return `
+      <div class="entrada">
+        <div class="badge">${codigoOrigen(e.origen)}</div>
+        <div class="entrada-body">
+          <div class="entrada-editable" data-entrada-id="${e.id}" data-origen="${e.origen}">
+            <p class="meta">${formatFechaHora(e.fecha)} · ${autor}</p>
+            <p class="texto">${textoEntrada(e)}</p>
+          </div>
+          ${e.origen === 'manual' ? `<button type="button" class="entrada-borrar" data-borrar-entrada="${e.id}" title="Eliminar esta entrada" aria-label="Eliminar esta entrada">🗑️</button>` : ''}
+          ${archivosHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+}
+
+// Menú flotante (FAB): se abre/cierra tocando el círculo, y se cierra si se toca afuera
+// o después de elegir "Agregar entrada"/"Adjuntar archivo".
+const fabWrap = document.getElementById('fab-wrap');
+const fabBtn = document.getElementById('fab-btn');
+fabBtn.addEventListener('click', (ev) => {
+  ev.stopPropagation();
+  const abierto = fabWrap.classList.toggle('open');
+  fabBtn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+});
+document.addEventListener('click', (ev) => {
+  if (fabWrap.classList.contains('open') && !fabWrap.contains(ev.target)) {
+    fabWrap.classList.remove('open');
+    fabBtn.setAttribute('aria-expanded', 'false');
+  }
+});
+
+// Modo Borrar / Modo Compartir: mientras están apagados, los botones de cada archivo quedan
+// ocultos; al activar uno, aparecen esos botones en todos los archivos (y se apaga el otro modo).
+const btnModoBorrar = document.getElementById('btn-modo-borrar');
+const btnModoCompartir = document.getElementById('btn-modo-compartir');
+function setModo(modo) {
+  const yaActivo = document.body.classList.contains('modo-' + modo);
+  document.body.classList.remove('modo-borrar', 'modo-compartir');
+  btnModoBorrar.classList.remove('activo');
+  btnModoCompartir.classList.remove('activo');
+  if (!yaActivo) {
+    document.body.classList.add('modo-' + modo);
+    (modo === 'borrar' ? btnModoBorrar : btnModoCompartir).classList.add('activo');
+  }
+}
+btnModoBorrar.addEventListener('click', () => setModo('borrar'));
+btnModoCompartir.addEventListener('click', () => setModo('compartir'));
+
+// Delegación de eventos: un solo listener en el contenedor en vez de uno por miniatura/entrada.
+// Así no importa cuántas veces se reconstruya el HTML con render(), siempre va a funcionar.
+document.getElementById('timeline').addEventListener('click', async (ev) => {
+  const compartirBtn = ev.target.closest('[data-compartir-archivo]');
+  if (compartirBtn) {
+    ev.stopPropagation();
+    await compartirArchivo(compartirBtn.dataset.compartirArchivo);
+    return;
+  }
+  const borrarBtn = ev.target.closest('[data-borrar-archivo]');
+  if (borrarBtn) {
+    ev.stopPropagation();
+    if (!confirm('¿Eliminar este archivo adjunto? Esta acción no se puede deshacer.')) return;
+    const archivoId = borrarBtn.dataset.borrarArchivo;
+    const ruta = borrarBtn.dataset.ruta;
+    try {
+      if (ruta) await sb.storage.from(BUCKET_ADJUNTOS).remove([ruta]);
+      const { error } = await sb.from('archivos').delete().eq('id', archivoId);
+      if (error) throw error;
+      // Actualizamos también la copia en memoria para no tener que recargar todo el caso.
+      (CASO.entradas || []).forEach(e => {
+        if (e.archivos) e.archivos = e.archivos.filter(a => String(a.id) !== String(archivoId));
+      });
+      render();
+    } catch (e) {
+      alert('No se pudo eliminar el adjunto: ' + e.message);
+    }
+    return;
+  }
+  const borrarEntradaBtn = ev.target.closest('[data-borrar-entrada]');
+  if (borrarEntradaBtn) {
+    ev.stopPropagation();
+    if (!confirm('¿Eliminar esta entrada, comentario y sus archivos adjuntos? Esta acción no se puede deshacer.')) return;
+    const entradaId = borrarEntradaBtn.dataset.borrarEntrada;
+    const entrada = (CASO.entradas || []).find(e => String(e.id) === String(entradaId));
+    try {
+      for (const archivo of (entrada?.archivos || [])) {
+        if (archivo.ruta_storage) {
+          await sb.storage.from(BUCKET_ADJUNTOS).remove([archivo.ruta_storage]);
+        }
+        if (archivo.id) {
+          const { error: errorArchivo } = await sb.from('archivos').delete().eq('id', archivo.id);
+          if (errorArchivo) throw errorArchivo;
+        }
+      }
+      const { error: errorEntrada } = await sb.from('entradas').delete().eq('id', entradaId);
+      if (errorEntrada) throw errorEntrada;
+      CASO.entradas = (CASO.entradas || []).filter(e => String(e.id) !== String(entradaId));
+      render();
+    } catch (e) {
+      alert('No se pudo eliminar la entrada: ' + e.message);
+    }
+    return;
+  }
+
+  const thumb = ev.target.closest('.archivo-thumb');
+  if (thumb) {
+    ev.stopPropagation();
+    console.log('[visor] click en miniatura, archivo id:', thumb.dataset.archivoId);
+    abrirVisor(thumb.dataset.archivoId);
+    return;
+  }
+  const editable = ev.target.closest('.entrada-editable');
+  if (editable && editable.dataset.origen !== 'manual') {
+    const archivo = editable.dataset.origen === 'hlc-20-S' ? 'hlc20_prototipo.html' : 'hlc07_prototipo.html';
+    const params = new URLSearchParams();
+    params.set('editar', editable.dataset.entradaId);
+    params.set('caso_id', casoId);
+    window.location.href = `${archivo}?${params.toString()}`;
+  }
+});
+
+// Busca el archivo por id, lo trae de Supabase Storage y lo pasa al selector nativo de compartir
+// (WhatsApp, mail, etc.), igual que el botón "Compartir" de hlc07_prototipo.html pero para un
+// archivo ya guardado en el expediente (no uno recién generado en memoria).
+async function compartirArchivo(archivoId) {
+  let archivo = null;
+  for (const e of CASO.entradas) {
+    const encontrado = (e.archivos || []).find(a => String(a.id) === String(archivoId));
+    if (encontrado) { archivo = encontrado; break; }
+  }
+  if (!archivo) { alert('No se encontró el archivo.'); return; }
+
+  const { data, error } = await sb.storage.from(BUCKET_ADJUNTOS).createSignedUrl(archivo.ruta_storage, 60 * 10);
+  if (error || !data) {
+    alert('No se pudo preparar el archivo para compartir: ' + (error ? error.message : 'error desconocido'));
+    return;
+  }
+  const url = data.signedUrl;
+  const tipoMime = archivo.tipo === 'pdf' ? 'application/pdf'
+    : archivo.tipo === 'imagen' ? 'image/jpeg'
+    : archivo.tipo === 'audio' ? 'audio/mpeg'
+    : 'application/octet-stream';
+
+  try {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    const file = new File([blob], archivo.nombre_original || 'archivo', { type: blob.type || tipoMime });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: archivo.nombre_original || 'Archivo adjunto' });
+      return;
+    }
+  } catch (e) {
+    console.warn('No se pudo compartir el archivo como adjunto directo, se prueba con el link:', e);
+  }
+
+  // Alternativa si el navegador no soporta compartir archivos directamente: comparte el link firmado.
+  if (navigator.share) {
+    try { await navigator.share({ url, title: archivo.nombre_original || 'Archivo adjunto' }); }
+    catch (e) { /* el usuario canceló el selector de compartir */ }
+    return;
+  }
+
+  // Último recurso (navegador de escritorio sin Web Share API): abrir el archivo en otra pestaña.
+  window.open(url, '_blank', 'noopener');
+}
+
+// Busca el archivo por id dentro de CASO.entradas y abre el visor con la URL firmada real de Supabase Storage.
+async function abrirVisor(archivoId) {
+  let archivo = null;
+  for (const e of CASO.entradas) {
+    const encontrado = (e.archivos || []).find(a => String(a.id) === String(archivoId));
+    if (encontrado) { archivo = encontrado; break; }
+  }
+  const contenido = document.getElementById('visor-contenido');
+  const overlay = document.getElementById('visor-overlay');
+  console.log('[visor] abrirVisor llamado, archivoId:', archivoId, 'encontrado:', !!archivo);
+  if (!archivo) {
+    contenido.innerHTML = '<p>No se encontró el archivo.</p>';
+    overlay.classList.add('open');
+    return;
+  }
+
+  contenido.innerHTML = '<p>Abriendo archivo...</p>';
+  overlay.classList.add('open');
+
+  const { data, error } = await sb.storage.from(BUCKET_ADJUNTOS).createSignedUrl(archivo.ruta_storage, 60 * 10);
+  if (error || !data) {
+    contenido.innerHTML = `<p>No se pudo abrir el archivo: ${error ? error.message : 'error desconocido'}</p>`;
+    return;
+  }
+
+  const url = data.signedUrl;
+  if (archivo.tipo === 'imagen') {
+    contenido.innerHTML = `<img src="${url}" alt="${archivo.nombre_original || 'archivo adjunto'}">`;
+  } else if (archivo.tipo === 'pdf') {
+    contenido.innerHTML = `<iframe src="${url}"></iframe><a class="descarga" href="${url}" target="_blank" rel="noopener">Abrir en otra pestaña</a>`;
+  } else if (archivo.tipo === 'audio') {
+    contenido.innerHTML = `<audio controls style="width:100%" src="${url}"></audio>`;
+  } else {
+    contenido.innerHTML = `<p>${archivo.nombre_original || 'Archivo adjunto'}</p><a class="descarga" href="${url}" target="_blank" rel="noopener">Descargar / abrir</a>`;
+  }
+}
+
+document.getElementById('visor-cerrar').addEventListener('click', () => {
+  const overlay = document.getElementById('visor-overlay');
+  overlay.classList.remove('open');
+  overlay.style.display = '';
+});
+
+document.getElementById('estado-select').addEventListener('change', async (e) => {
+  const nuevoEstado = e.target.value;
+  const anterior = CASO.estado;
+  const { error } = await sb.from('casos').update({ estado: nuevoEstado }).eq('id', casoId);
+  if (error) { alert('No se pudo cambiar el estado: ' + error.message); e.target.value = anterior; return; }
+  CASO.estado = nuevoEstado;
+  render();
+});
+
+// Borra un expediente completo: primero los archivos reales en Storage, después las filas de
+// archivos/entradas/caso, y por último la persona si no le queda ningún otro expediente.
+async function borrarExpedienteCompleto(id) {
+  try {
+    const { data: entradas } = await sb.from('entradas').select('id, archivos(ruta_storage)').eq('caso_id', id);
+    const rutas = [];
+    (entradas || []).forEach(e => (e.archivos || []).forEach(a => { if (a.ruta_storage) rutas.push(a.ruta_storage); }));
+    if (rutas.length) await sb.storage.from(BUCKET_ADJUNTOS).remove(rutas);
+    const idsEntradas = (entradas || []).map(e => e.id);
+    if (idsEntradas.length) await sb.from('archivos').delete().in('entrada_id', idsEntradas);
+    await sb.from('entradas').delete().eq('caso_id', id);
+    const { data: caso } = await sb.from('casos').select('persona_id').eq('id', id).single();
+    await sb.from('casos').delete().eq('id', id);
+    if (caso && caso.persona_id) {
+      const { count } = await sb.from('casos').select('id', { count: 'exact', head: true }).eq('persona_id', caso.persona_id);
+      if (!count) await sb.from('personas').delete().eq('id', caso.persona_id);
+    }
+    return { error: null };
+  } catch (e) {
+    return { error: e };
+  }
+}
+
+document.getElementById('btn-borrar-expediente').addEventListener('click', async () => {
+  const { data: { user } } = await sb.auth.getUser();
+  const escrito = prompt(`Esto borra TODO el expediente de "${CASO.nombre}" (entradas, archivos y adjuntos) para siempre.\n\nEscribí el nombre completo del paciente tal cual aparece arriba para confirmar que querés proponerlo:`);
+  if (escrito === null) return;
+  if (escrito.trim().toLowerCase() !== CASO.nombre.trim().toLowerCase()) {
+    alert('El nombre no coincide. No se propuso nada.');
+    return;
+  }
+  const { data: admins } = await sb.from('profiles').select('id').eq('es_admin', true);
+  const totalAdmins = (admins || []).length;
+  if (totalAdmins <= 1) {
+    if (!confirm(`Sos el único administrador, así que se aplica directo. ¿Borrar el expediente de "${CASO.nombre}" ahora?`)) return;
+    const { error } = await borrarExpedienteCompleto(casoId);
+    if (error) { alert('No se pudo borrar: ' + error.message); return; }
+    alert('Expediente borrado.');
+    window.location.href = 'menu.html?tab=casos';
+    return;
+  }
+  const { error } = await sb.from('solicitudes_admin').insert({
+    tipo: 'borrar_expediente', objetivo_id: casoId, objetivo_email: CASO.nombre,
+    propuesto_por: user.id, confirmaciones: [user.id], estado: 'pendiente'
+  });
+  if (error) { alert('No se pudo crear la propuesta: ' + error.message); return; }
+  alert('Se creó la propuesta de borrado. Falta que los demás administradores la confirmen desde el Panel de administración.');
+});
+
+(async function mostrarBotonBorrarSiEsAdmin() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+  const { data: perfil } = await sb.from('profiles').select('es_admin').eq('id', user.id).single();
+  if (perfil && perfil.es_admin) {
+    document.getElementById('btn-borrar-expediente').style.display = '';
+  }
+})();
+
+document.getElementById('btn-agregar').addEventListener('click', () => {
+  window.location.href = 'hlc07_prototipo.html?caso_id=' + casoId;
+});
+
+// --- Modal "Adjuntar" (fotos/PDFs/audio/comentario), independiente de los formularios ---
+(function adjuntarModal() {
+  const overlay = document.getElementById('adjuntar-overlay');
+  const comentarioEl = document.getElementById('adjuntar-comentario');
+  const archivosEl = document.getElementById('adjuntar-archivos');
+  const statusEl = document.getElementById('adjuntar-status');
+  const btnGrabar = document.getElementById('btn-grabar');
+  const previewWrap = document.getElementById('audio-preview-wrap');
+  const btnGuardar = document.getElementById('adjuntar-guardar');
+  const btnCancelar = document.getElementById('adjuntar-cancelar');
+
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let audioBlob = null;
+  let audioStream = null;
+
+  function limpiarNombre(nombre) {
+    return (nombre || 'archivo').replace(/[^a-zA-Z0-9_.-]/g, '_');
+  }
+
+  // Achica las fotos antes de subirlas (máximo 1600px de lado, calidad 75%) para no gastar
+  // de más el almacenamiento ni tardar en cargar — los PDFs y otros archivos se suben tal cual.
+  function comprimirImagen(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1600;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+            else { width = Math.round(width * MAX / height); height = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', 0.75);
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function resetModal() {
+    comentarioEl.value = '';
+    archivosEl.value = '';
+    statusEl.textContent = '';
+    audioBlob = null;
+    previewWrap.innerHTML = '';
+    btnGrabar.textContent = '🎙️ Grabar audio';
+    btnGrabar.classList.remove('grabando');
+    btnGuardar.disabled = false;
+  }
+
+  function mostrarPreviewAudio() {
+    const url = URL.createObjectURL(audioBlob);
+    previewWrap.innerHTML = `<audio controls src="${url}"></audio> <button type="button" class="btn-quitar-audio" id="btn-quitar-audio">Quitar</button>`;
+    document.getElementById('btn-quitar-audio').addEventListener('click', () => {
+      audioBlob = null;
+      previewWrap.innerHTML = '';
+    });
+  }
+
+  btnGrabar.addEventListener('click', async () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      return;
+    }
+    try {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      statusEl.textContent = 'No se pudo acceder al micrófono: ' + e.message;
+      return;
+    }
+    let mimeType = 'audio/webm;codecs=opus';
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+    mediaRecorder = new MediaRecorder(audioStream, mimeType ? { mimeType, audioBitsPerSecond: 48000 } : { audioBitsPerSecond: 48000 });
+    audioChunks = [];
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      audioStream.getTracks().forEach(t => t.stop());
+      btnGrabar.textContent = '🎙️ Grabar audio';
+      btnGrabar.classList.remove('grabando');
+      mostrarPreviewAudio();
+    };
+    mediaRecorder.start();
+    btnGrabar.textContent = '⏹️ Detener grabación';
+    btnGrabar.classList.add('grabando');
+  });
+
+  document.getElementById('btn-adjuntar').addEventListener('click', () => {
+    resetModal();
+    overlay.classList.add('open');
+    fabWrap.classList.remove('open');
+    fabBtn.setAttribute('aria-expanded', 'false');
+  });
+
+  btnCancelar.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    overlay.classList.remove('open');
+  });
+
+  btnGuardar.addEventListener('click', async () => {
+    const comentario = comentarioEl.value.trim();
+    const archivos = Array.from(archivosEl.files || []);
+    if (!comentario && archivos.length === 0 && !audioBlob) {
+      statusEl.textContent = 'Agregá al menos un archivo, un audio o un comentario.';
+      return;
+    }
+    btnGuardar.disabled = true;
+    statusEl.textContent = 'Guardando...';
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      const { data: entrada, error: errorEntrada } = await sb
+        .from('entradas')
+        .insert({ caso_id: casoId, autor_id: user.id, origen: 'manual', datos: comentario ? { comentario } : {} })
+        .select().single();
+      if (errorEntrada) throw errorEntrada;
+
+      let subidos = 0;
+      const fallidos = [];
+      for (const file of archivos) {
+        statusEl.textContent = `Subiendo archivo ${subidos + 1} de ${archivos.length}...`;
+        let tipo = 'otro';
+        let bytesParaSubir = file;
+        if (file.type.startsWith('image/')) { tipo = 'imagen'; bytesParaSubir = await comprimirImagen(file); }
+        else if (file.type === 'application/pdf') { tipo = 'pdf'; }
+        const ruta = `casos/${casoId}/entrada_${entrada.id}/${Date.now()}_${limpiarNombre(file.name)}`;
+        const { error: errorSubida } = await sb.storage.from(BUCKET_ADJUNTOS).upload(ruta, bytesParaSubir, { contentType: file.type || 'application/octet-stream', upsert: true });
+        if (!errorSubida) {
+          await sb.from('archivos').insert({ entrada_id: entrada.id, nombre_original: file.name, ruta_storage: ruta, tipo });
+        } else {
+          console.error('[adjuntar] fallo al subir', file.name, errorSubida);
+          fallidos.push(file.name);
+        }
+        subidos++;
+      }
+
+      if (audioBlob) {
+        statusEl.textContent = 'Subiendo audio...';
+        const ext = audioBlob.type.includes('mp4') ? 'm4a' : 'webm';
+        const ruta = `casos/${casoId}/entrada_${entrada.id}/audio_${Date.now()}.${ext}`;
+        const { error: errorAudio } = await sb.storage.from(BUCKET_ADJUNTOS).upload(ruta, audioBlob, { contentType: audioBlob.type || 'audio/webm', upsert: true });
+        if (!errorAudio) {
+          await sb.from('archivos').insert({ entrada_id: entrada.id, nombre_original: 'Grabación de audio', ruta_storage: ruta, tipo: 'audio' });
+        }
+      }
+
+      overlay.classList.remove('open');
+      CASO = await cargarCaso();
+      if (CASO) render();
+      if (fallidos.length) {
+        alert('Se guardó la entrada, pero estos archivos NO se pudieron subir:\n' + fallidos.join('\n'));
+      }
+    } catch (e) {
+      statusEl.textContent = 'No se pudo guardar: ' + e.message;
+    } finally {
+      btnGuardar.disabled = false;
+    }
+  });
+})();
+
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    window.location.href = 'index.html';
+    return;
+  }
+  if (!casoId) {
+    document.getElementById('timeline').innerHTML = '<div class="vacio">Falta el id del caso en la URL.</div>';
+    return;
+  }
+  CASO = await cargarCaso();
+  if (CASO) render();
+})();
+</script>
+
+</body>
+</html>

@@ -9,17 +9,25 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Formularios CEH">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>Datos de contacto para el CEH</title>
+<title>Médicos colaboradores o consultores para el CEH</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root { --paper: #f6f4ef; --ink: #1f2a24; --line: #c9c2b3; --accent: #2f5d50; --accent-soft: #e4ece8; --danger: #8a3b2b; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Iowan Old Style', 'Georgia', serif; padding-bottom: 100px; }
   header { padding: 28px 20px 18px; border-bottom: 2px solid var(--ink); }
+  .back-link { display: inline-block; margin-bottom: 10px; font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
+  .back-link:active { opacity: 0.7; }
   header .kicker { font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
   header h1 { margin: 6px 0 4px; font-size: 22px; line-height: 1.25; }
   header p { margin: 0; font-size: 13px; color: #5a5347; font-family: -apple-system, sans-serif; }
   main { max-width: 720px; margin: 0 auto; padding: 18px 16px; }
+
+  @media (min-width: 860px) {
+    main { max-width: 980px; padding: 28px 24px; }
+    header { padding: 36px 24px 20px; }
+  }
   .section { background: #fffdf9; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 12px; }
   .section summary { list-style: none; cursor: pointer; padding: 14px 16px; font-family: -apple-system, sans-serif; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; }
   .section summary::-webkit-details-marker { display: none; }
@@ -42,7 +50,7 @@
   .phone-row input { flex: 1; }
   .wa-btn {
     flex-shrink: 0; width: 42px; height: 42px; padding: 0;
-    border: none; border-radius: 50%; background: #25D366; cursor: pointer;
+    border: none; border-radius: 13px 13px 13px 3px; background: #25D366; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.15);
     display: flex; align-items: center; justify-content: center;
   }
   .wa-btn svg { width: 20px; height: 20px; fill: #fff; }
@@ -50,7 +58,6 @@
   .actions { position: sticky; bottom: 0; background: var(--paper); border-top: 2px solid var(--ink); padding: 14px 16px; display: flex; gap: 10px; max-width: 720px; margin: 0 auto; }
   button { font-family: -apple-system, sans-serif; font-weight: 600; font-size: 15px; padding: 13px 16px; border-radius: 4px; border: none; cursor: pointer; flex: 1; }
   #generar { background: var(--accent); color: #fff; }
-  #compartir { background: var(--ink); color: #fff; display:none; }
   #descargar { background: var(--accent-soft); color: var(--accent); display:none; }
   .upload-bar { max-width: 720px; margin: 0 auto; padding: 14px 16px 0; }
   .upload-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px 16px; border: 1.5px dashed var(--accent); border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-family: -apple-system, sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; }
@@ -59,15 +66,197 @@
   .fld.prefilled span::after { content: " · ya cargado"; color: var(--accent); font-weight: 600; }
   .chk.prefilled { background: #eef5f0; border-radius: 3px; padding: 4px 6px; margin: -4px -6px; }
   #status { max-width: 720px; margin: 0 auto; padding: 0 16px; font-family: -apple-system, sans-serif; font-size: 13px; color: var(--danger); }
+  #recordatorios { max-width: 720px; margin: 8px auto 0; padding: 0 16px; display: grid; gap: 8px; }
+  .recordatorio { background: var(--accent-soft); color: var(--accent); border-radius: 4px; padding: 10px 12px; font-family: -apple-system, sans-serif; font-size: 12.5px; line-height: 1.5; }
+  .recordatorio a { color: var(--accent); font-weight: 600; }
+
+
+  .filename-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 110;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .filename-modal-overlay.open { display: flex; }
+  .filename-modal {
+    background: #fffdf9; border-radius: 8px; max-width: 420px; width: 100%;
+    padding: 20px; font-family: -apple-system, sans-serif; color: #1f2a24;
+  }
+  .filename-modal h3 { margin: 0 0 4px; font-family: 'Iowan Old Style', Georgia, serif; font-size: 17px; }
+  .filename-modal p.hint { margin: 0 0 12px; font-size: 12px; color: #5a5347; }
+  .filename-input {
+    width: 100%; padding: 10px; border: 1px solid #c9c2b3; border-radius: 4px;
+    font-family: -apple-system, sans-serif; font-size: 15px; box-sizing: border-box;
+  }
+  .filename-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .filename-modal-actions button {
+    flex: 1; padding: 11px; border-radius: 4px; border: none; font-weight: 600;
+    font-family: -apple-system, sans-serif; font-size: 14px; cursor: pointer;
+  }
+  .filename-btn-secondary { background: #e4ece8; color: #2f5d50; }
+  .filename-btn-primary { background: #2f5d50; color: #fff; }
+
+/* Aviso de guardado correcto */
+  .save-success-overlay {
+    display: none; position: fixed; inset: 0; z-index: 100000;
+    background: rgba(0,0,0,0.55); align-items: center; justify-content: center; padding: 20px;
+  }
+  .save-success-overlay.open { display: flex; }
+  .save-success-box {
+    width: min(430px, calc(100% - 32px)); background: #fffdf9;
+    border: 1px solid var(--line); border-radius: 12px; padding: 28px 24px;
+    text-align: center; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+  }
+  .save-success-icon {
+    width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft); color: var(--accent); font-size: 30px; font-weight: 700;
+  }
+  .save-success-box h3 { margin: 0 0 8px; font-size: 21px; color: var(--ink); }
+  .save-success-box p { margin: 0; font-size: 14px; color: #5a5347; line-height: 1.45; }
+
+  .hlc31-coincidencia {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border: 1px solid #d9a441;
+    border-radius: 8px;
+    background: #fff8e8;
+    color: #4d3b16;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .hlc31-coincidencia strong { display: block; margin-bottom: 3px; }
+  .hlc31-alerta-campo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 0;
+    height: 0;
+    margin-left: 7px;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 10px solid #d39a19;
+    vertical-align: middle;
+    cursor: help;
+  }
+  .hlc31-alerta-campo[title]::after { content: none; }
+  .hlc31-flotante-coincidencias {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 100001;
+    display: none;
+    width: min(360px, calc(100vw - 32px));
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .hlc31-flotante-coincidencias.visible { display: block; }
+  .hlc31-volver-coincidencia {
+    display: none;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #c8d5cf;
+    border-radius: 10px;
+    background: #f5f8f6;
+  }
+  .hlc31-volver-coincidencia.visible { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+  .hlc31-volver-coincidencia button {
+    border: 0; border-radius: 8px; padding: 9px 12px; cursor: pointer;
+    font-weight: 600; background: #2f5d50; color: #fff;
+  }
+  .hlc31-volver-coincidencia .confirmar { background: #fff; color: #315f4a; border: 1px solid #9bc4ad; }
+  .hlc31-volver-coincidencia .descartar { background: #fff; color: #7b3f35; border: 1px solid #d7aaa2; }
+  .hlc31-flotante-boton {
+    width: 100%;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: #8a3b2b;
+    color: #fff;
+    box-shadow: 0 5px 18px rgba(0,0,0,0.22);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .hlc31-flotante-lista {
+    display: none;
+    margin-bottom: 8px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fffdf9;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  }
+  .hlc31-flotante-lista.abierta { display: grid; gap: 7px; }
+  .hlc31-flotante-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #fff;
+  }
+  .hlc31-flotante-item span {
+    flex: 1;
+    font-size: 12.5px;
+    line-height: 1.3;
+  }
+  .hlc31-flotante-item button {
+    flex: 0 0 auto;
+    padding: 7px 9px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
 </style>
 </head>
 <body>
 
+<div id="filename-modal-overlay" class="filename-modal-overlay">
+  <div class="filename-modal">
+    <h3>Nombre del archivo</h3>
+    <p class="hint">Revisá o corregí el nombre antes de continuar (se agrega .pdf solo).</p>
+    <input type="text" id="filename-input" class="filename-input" autocomplete="off">
+    <div class="filename-modal-actions">
+      <button id="filename-cancel" class="filename-btn-secondary" type="button">Cancelar</button>
+      <button id="filename-confirm" class="filename-btn-primary" type="button">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="save-success-overlay" class="save-success-overlay" aria-live="polite" role="status">
+  <div class="save-success-box">
+    <div class="save-success-icon">✓</div>
+    <h3>Se guardó correctamente el archivo</h3>
+    <p>El registro fue guardado en Médicos colaboradores.</p>
+  </div>
+</div>
+
+
+
+
 <header>
+  <a href="menu.html" class="back-link">‹ Volver al menú</a>
   <div class="kicker">Prototipo · Comité de Enlace con los Hospitales</div>
-  <h1>Datos de contacto para el CEH</h1>
+  <h1>Médicos colaboradores o consultores para el CEH</h1>
   <p>hlc-31-S — Este PDF ya venía con datos (Eduardo Arias) porque no había uno en blanco. Los campos con datos aparecen marcados en verde y se sobrescriben si cambiás algo.</p>
 </header>
+
+<div id="hlc31-volver-coincidencia" class="hlc31-volver-coincidencia">
+  <div>
+    <strong>Estás revisando un registro para comprobar una posible coincidencia.</strong><br>
+    <span style="font-size:13px;color:#5f6b65;">Si no es el mismo médico, descartalo y volvé al formulario original.</span>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button id="hlc31-btn-volver-formulario" type="button">‹ Volver al formulario</button>
+    <button id="hlc31-btn-mismo-medico" class="confirmar" type="button">Sí, es el mismo médico</button>
+    <button id="hlc31-btn-descartar-coincidencia" class="descartar" type="button">No es el mismo médico</button>
+  </div>
+</div>
 
 <div class="upload-bar">
   <label class="upload-btn">
@@ -82,6 +271,7 @@
       <summary><span class="num">01</span>Sección 1 — Uso del formulario</summary>
       
       <div class="grid">
+        <label class="fld" id="campo-sector-wrapper"><span>Zona / sector donde se está trabajando *</span><select autocomplete="off" data-field="sector_zona_ceh" data-type="text" id="campo-sector"><option value="">Seleccioná una zona...</option></select></label>
         <div class="note">Formulario utilizado para (marque una opción):</div>
 <div class="row-group">
 <label class="chk"><input type="checkbox" autocomplete="off" data-field="900_1_CheckBox" data-type="check" data-excl="900_2_CheckBox"><span>Actualizar información sobre un contacto</span></label>
@@ -113,7 +303,7 @@
 <label class="fld fld-row fld-narrow"><span>Número de la congregación</span><input type="text" data-combine="900_16_Text_SanSerif" data-role="numero"></label>
 </div>
 <label class="fld"><span>Dirección</span><input type="text" data-field1="900_17_Text_SanSerif" data-field2="900_18_Text_SanSerif" data-type="direccion-split"></label>
-<label class="fld"><span>Ciudad</span><input type="text" autocomplete="off" data-field="900_19_Text_SanSerif" data-type="text"></label>
+<label class="fld"><span>Localidad</span><input type="text" autocomplete="off" data-field="900_19_Text_SanSerif" data-type="text"></label>
 <div class="row-group">
 <label class="fld fld-row"><span>Provincia o estado</span><input type="text" autocomplete="off" data-field="900_20_Text_SanSerif" data-type="text"></label>
 <label class="fld fld-row fld-narrow"><span>Zona o código</span><input type="text" autocomplete="off" data-field="900_21_Text_SanSerif" data-type="text"></label>
@@ -128,16 +318,35 @@
       
       <div class="grid">
         <div class="row-group">
-<label class="fld fld-row"><span>Especialidad 1</span><select autocomplete="off" data-field="900_24_HLC_Skills" data-type="select"><option value=""></option><option value="1">Anestesiología</option><option value="2">Cirugía bucal y maxilofacial</option><option value="3">Cirugía cardiaca</option><option value="4">Cirugía colorrectal</option><option value="5">Cirugía de trasplantes</option><option value="6">Cirugía general</option><option value="Cirugía ortopédica">Cirugía ortopédica</option><option value="8">Cirugía torácica</option><option value="9">Cirugía traumatológica</option><option value="10">Cirugía vascular</option><option value="11">Cuidados intensivos</option><option value="12">Gastroenterología</option><option value="13">Ginecología</option><option value="14">Hematología</option><option value="15">Hospitalista tocoginecólogo</option><option value="16">Medicina de urgencias</option><option value="17">Medicina hospitalaria</option><option value="18">Medicina interna</option><option value="19">Nefrología</option><option value="20">Neonatología</option><option value="21">Neumología</option><option value="22">Neurocirugía</option><option value="23">Nocturnista</option><option value="24">Obstetricia</option><option value="25">Oncología</option><option value="26">Oncología ginecológica</option><option value="27">Otorrinolaringología (cirugía de cabeza y cuello)</option><option value="28">Perinatólogo (embarazo de alto riesgo)</option><option value="29">Radiología intervencionista</option><option value="30">Tratamiento de quemaduras</option><option value="31">Urología</option><option value="32">Otra</option></select></label>
-<label class="fld fld-row"><span>Subespecialidad 1</span><select autocomplete="off" data-field="900_27_HLC_Skills" data-type="select"><option value=""></option><option value="1">Anestesiología</option><option value="2">Cirugía bucal y maxilofacial</option><option value="3">Cirugía cardiaca</option><option value="4">Cirugía colorrectal</option><option value="5">Cirugía de trasplantes</option><option value="6">Cirugía general</option><option value="Cirugía ortopédica">Cirugía ortopédica</option><option value="8">Cirugía torácica</option><option value="9">Cirugía traumatológica</option><option value="10">Cirugía vascular</option><option value="11">Cuidados intensivos</option><option value="12">Gastroenterología</option><option value="13">Ginecología</option><option value="14">Hematología</option><option value="15">Hospitalista tocoginecólogo</option><option value="16">Medicina de urgencias</option><option value="17">Medicina hospitalaria</option><option value="18">Medicina interna</option><option value="19">Nefrología</option><option value="20">Neonatología</option><option value="21">Neumología</option><option value="22">Neurocirugía</option><option value="23">Nocturnista</option><option value="24">Obstetricia</option><option value="25">Oncología</option><option value="26">Oncología ginecológica</option><option value="27">Otorrinolaringología (cirugía de cabeza y cuello)</option><option value="28">Perinatólogo (embarazo de alto riesgo)</option><option value="29">Radiología intervencionista</option><option value="30">Tratamiento de quemaduras</option><option value="31">Urología</option><option value="32">Otra</option></select></label>
+<label class="fld fld-row"><span>Consultor / Colaborador / No</span><select autocomplete="off" data-field="tipo_relacion_ceh" data-type="select"><option value=""></option><option value="Consultor">Consultor</option><option value="Colaborador">Colaborador</option><option value="No">No</option></select></label>
+<label class="fld fld-row"><span>Estado del médico</span><select autocomplete="off" data-field="estado_medico" data-type="select"><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select></label>
+</div>
+        
+<label class="fld"><span>Hospital / institución donde trabaja</span><input type="text" autocomplete="off" data-field="hospital_sector_ceh" data-type="text" placeholder="Nombre del hospital o institución"></label>
+<div class="fld">
+  <span>Días que trabaja en este hospital / institución</span>
+  <div class="row-group">
+    <label class="chk"><input type="checkbox" data-field="dias_trabajo_hospital_lunes" data-type="check"><span>Lunes</span></label>
+    <label class="chk"><input type="checkbox" data-field="dias_trabajo_hospital_martes" data-type="check"><span>Martes</span></label>
+    <label class="chk"><input type="checkbox" data-field="dias_trabajo_hospital_miercoles" data-type="check"><span>Miércoles</span></label>
+    <label class="chk"><input type="checkbox" data-field="dias_trabajo_hospital_jueves" data-type="check"><span>Jueves</span></label>
+    <label class="chk"><input type="checkbox" data-field="dias_trabajo_hospital_viernes" data-type="check"><span>Viernes</span></label>
+    <label class="chk"><input type="checkbox" data-field="dias_trabajo_hospital_sabado" data-type="check"><span>Sábado</span></label>
+    <label class="chk"><input type="checkbox" data-field="dias_trabajo_hospital_domingo" data-type="check"><span>Domingo</span></label>
+  </div>
+</div>
+
+<div class="row-group">
+<label class="fld fld-row"><span>Especialidad 1</span><select autocomplete="off" data-field="900_24_HLC_Skills" data-type="select"><option value=""></option><option value="1">Anestesiología</option><option value="2">Cardiología</option><option value="3">Cirugía cardíaca</option><option value="4">Cirugía colorrectal</option><option value="5">Cirugía general</option><option value="6">Cirugía ortopédica</option><option value="7">Cirugía vascular</option><option value="8">Gastroenterología</option><option value="9">Ginecología</option><option value="10">Hematología</option><option value="11">Hospitalista</option><option value="12">Medicina de urgencias</option><option value="13">Medicina intensiva</option><option value="14">Médico Clínico</option><option value="15">Nefrología</option><option value="16">Neonatología</option><option value="17">Neumología</option><option value="18">Neurocirugía</option><option value="19">Obstetricia</option><option value="20">Oncología</option><option value="21">Oncología ginecológica</option><option value="22">Otorrinolaringología</option><option value="23">Pediatría</option><option value="24">Traumatología</option><option value="25">Urología</option></select></label>
+<label class="fld fld-row"><span>Subespecialidad 1</span><input type="text" autocomplete="off" data-field="900_27_HLC_Skills" data-type="text" placeholder="Texto libre"></label>
 </div>
 <div class="row-group">
-<label class="fld fld-row"><span>Especialidad 2</span><select autocomplete="off" data-field="900_25_HLC_Skills" data-type="select"><option value=""></option><option value="1">Anestesiología</option><option value="2">Cirugía bucal y maxilofacial</option><option value="3">Cirugía cardiaca</option><option value="4">Cirugía colorrectal</option><option value="5">Cirugía de trasplantes</option><option value="6">Cirugía general</option><option value="Cirugía ortopédica">Cirugía ortopédica</option><option value="8">Cirugía torácica</option><option value="9">Cirugía traumatológica</option><option value="10">Cirugía vascular</option><option value="11">Cuidados intensivos</option><option value="12">Gastroenterología</option><option value="13">Ginecología</option><option value="14">Hematología</option><option value="15">Hospitalista tocoginecólogo</option><option value="16">Medicina de urgencias</option><option value="17">Medicina hospitalaria</option><option value="18">Medicina interna</option><option value="19">Nefrología</option><option value="20">Neonatología</option><option value="21">Neumología</option><option value="22">Neurocirugía</option><option value="23">Nocturnista</option><option value="24">Obstetricia</option><option value="25">Oncología</option><option value="26">Oncología ginecológica</option><option value="27">Otorrinolaringología (cirugía de cabeza y cuello)</option><option value="28">Perinatólogo (embarazo de alto riesgo)</option><option value="29">Radiología intervencionista</option><option value="30">Tratamiento de quemaduras</option><option value="31">Urología</option><option value="32">Otra</option></select></label>
-<label class="fld fld-row"><span>Subespecialidad 2</span><select autocomplete="off" data-field="900_28_HLC_Skills" data-type="select"><option value=""></option><option value="1">Anestesiología</option><option value="2">Cirugía bucal y maxilofacial</option><option value="3">Cirugía cardiaca</option><option value="4">Cirugía colorrectal</option><option value="5">Cirugía de trasplantes</option><option value="6">Cirugía general</option><option value="Cirugía ortopédica">Cirugía ortopédica</option><option value="8">Cirugía torácica</option><option value="9">Cirugía traumatológica</option><option value="10">Cirugía vascular</option><option value="11">Cuidados intensivos</option><option value="12">Gastroenterología</option><option value="13">Ginecología</option><option value="14">Hematología</option><option value="15">Hospitalista tocoginecólogo</option><option value="16">Medicina de urgencias</option><option value="17">Medicina hospitalaria</option><option value="18">Medicina interna</option><option value="19">Nefrología</option><option value="20">Neonatología</option><option value="21">Neumología</option><option value="22">Neurocirugía</option><option value="23">Nocturnista</option><option value="24">Obstetricia</option><option value="25">Oncología</option><option value="26">Oncología ginecológica</option><option value="27">Otorrinolaringología (cirugía de cabeza y cuello)</option><option value="28">Perinatólogo (embarazo de alto riesgo)</option><option value="29">Radiología intervencionista</option><option value="30">Tratamiento de quemaduras</option><option value="31">Urología</option><option value="32">Otra</option></select></label>
+<label class="fld fld-row"><span>Especialidad 2</span><select autocomplete="off" data-field="900_25_HLC_Skills" data-type="select"><option value=""></option><option value="1">Anestesiología</option><option value="2">Cardiología</option><option value="3">Cirugía cardíaca</option><option value="4">Cirugía colorrectal</option><option value="5">Cirugía general</option><option value="6">Cirugía ortopédica</option><option value="7">Cirugía vascular</option><option value="8">Gastroenterología</option><option value="9">Ginecología</option><option value="10">Hematología</option><option value="11">Hospitalista</option><option value="12">Medicina de urgencias</option><option value="13">Medicina intensiva</option><option value="14">Médico Clínico</option><option value="15">Nefrología</option><option value="16">Neonatología</option><option value="17">Neumología</option><option value="18">Neurocirugía</option><option value="19">Obstetricia</option><option value="20">Oncología</option><option value="21">Oncología ginecológica</option><option value="22">Otorrinolaringología</option><option value="23">Pediatría</option><option value="24">Traumatología</option><option value="25">Urología</option></select></label>
+<label class="fld fld-row"><span>Subespecialidad 2</span><input type="text" autocomplete="off" data-field="900_28_HLC_Skills" data-type="text" placeholder="Texto libre"></label>
 </div>
 <div class="row-group">
-<label class="fld fld-row"><span>Especialidad 3</span><select autocomplete="off" data-field="900_26_HLC_Skills" data-type="select"><option value=""></option><option value="1">Anestesiología</option><option value="2">Cirugía bucal y maxilofacial</option><option value="3">Cirugía cardiaca</option><option value="4">Cirugía colorrectal</option><option value="5">Cirugía de trasplantes</option><option value="6">Cirugía general</option><option value="Cirugía ortopédica">Cirugía ortopédica</option><option value="8">Cirugía torácica</option><option value="9">Cirugía traumatológica</option><option value="10">Cirugía vascular</option><option value="11">Cuidados intensivos</option><option value="12">Gastroenterología</option><option value="13">Ginecología</option><option value="14">Hematología</option><option value="15">Hospitalista tocoginecólogo</option><option value="16">Medicina de urgencias</option><option value="17">Medicina hospitalaria</option><option value="18">Medicina interna</option><option value="19">Nefrología</option><option value="20">Neonatología</option><option value="21">Neumología</option><option value="22">Neurocirugía</option><option value="23">Nocturnista</option><option value="24">Obstetricia</option><option value="25">Oncología</option><option value="26">Oncología ginecológica</option><option value="27">Otorrinolaringología (cirugía de cabeza y cuello)</option><option value="28">Perinatólogo (embarazo de alto riesgo)</option><option value="29">Radiología intervencionista</option><option value="30">Tratamiento de quemaduras</option><option value="31">Urología</option><option value="32">Otra</option></select></label>
-<label class="fld fld-row"><span>Subespecialidad 3</span><select autocomplete="off" data-field="900_29_HLC_Skills" data-type="select"><option value=""></option><option value="1">Anestesiología</option><option value="2">Cirugía bucal y maxilofacial</option><option value="3">Cirugía cardiaca</option><option value="4">Cirugía colorrectal</option><option value="5">Cirugía de trasplantes</option><option value="6">Cirugía general</option><option value="Cirugía ortopédica">Cirugía ortopédica</option><option value="8">Cirugía torácica</option><option value="9">Cirugía traumatológica</option><option value="10">Cirugía vascular</option><option value="11">Cuidados intensivos</option><option value="12">Gastroenterología</option><option value="13">Ginecología</option><option value="14">Hematología</option><option value="15">Hospitalista tocoginecólogo</option><option value="16">Medicina de urgencias</option><option value="17">Medicina hospitalaria</option><option value="18">Medicina interna</option><option value="19">Nefrología</option><option value="20">Neonatología</option><option value="21">Neumología</option><option value="22">Neurocirugía</option><option value="23">Nocturnista</option><option value="24">Obstetricia</option><option value="25">Oncología</option><option value="26">Oncología ginecológica</option><option value="27">Otorrinolaringología (cirugía de cabeza y cuello)</option><option value="28">Perinatólogo (embarazo de alto riesgo)</option><option value="29">Radiología intervencionista</option><option value="30">Tratamiento de quemaduras</option><option value="31">Urología</option><option value="32">Otra</option></select></label>
+<label class="fld fld-row"><span>Especialidad 3</span><select autocomplete="off" data-field="900_26_HLC_Skills" data-type="select"><option value=""></option><option value="1">Anestesiología</option><option value="2">Cardiología</option><option value="3">Cirugía cardíaca</option><option value="4">Cirugía colorrectal</option><option value="5">Cirugía general</option><option value="6">Cirugía ortopédica</option><option value="7">Cirugía vascular</option><option value="8">Gastroenterología</option><option value="9">Ginecología</option><option value="10">Hematología</option><option value="11">Hospitalista</option><option value="12">Medicina de urgencias</option><option value="13">Medicina intensiva</option><option value="14">Médico Clínico</option><option value="15">Nefrología</option><option value="16">Neonatología</option><option value="17">Neumología</option><option value="18">Neurocirugía</option><option value="19">Obstetricia</option><option value="20">Oncología</option><option value="21">Oncología ginecológica</option><option value="22">Otorrinolaringología</option><option value="23">Pediatría</option><option value="24">Traumatología</option><option value="25">Urología</option></select></label>
+<label class="fld fld-row"><span>Subespecialidad 3</span><input type="text" autocomplete="off" data-field="900_29_HLC_Skills" data-type="text" placeholder="Texto libre"></label>
 </div>
 <div class="note">Tipos de pacientes aceptados por el médico (marque todo lo que corresponda):</div>
 <div class="row-group">
@@ -162,10 +371,17 @@
 </main>
 
 <div id="status"></div>
+<div id="recordatorios"></div>
+<div id="hlc31-flotante-coincidencias" class="hlc31-flotante-coincidencias" aria-live="polite">
+  <div id="hlc31-flotante-lista" class="hlc31-flotante-lista"></div>
+  <button id="hlc31-flotante-boton" class="hlc31-flotante-boton" type="button">⚠️ Ver registros con coincidencias</button>
+</div>
+<p style="text-align:center; font-family:-apple-system,sans-serif; font-size:12px; margin:6px 16px 0;">
+  <a href="instrucciones.html#whatsapp-preview" style="color:#2f5d50;">¿No ves los datos completos en la vista previa de WhatsApp?</a>
+</p>
 
 <div class="actions">
   <button id="generar">Generar PDF</button>
-  <button id="compartir">Compartir</button>
   <button id="descargar">Descargar</button>
 </div>
 
@@ -178,7 +394,706 @@ function b64ToBytes(b64) {
   return bytes;
 }
 let lastBlob = null;
+let lastFlatBlob = null;
+
+const CONFIG_KEY = 'hlc_config_v1';
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
 let lastFilename = "hlc-31-S-completado.pdf";
+
+// --- Historial compartido en Supabase (tabla registros_hlc31) — sin caso ni persona,        ---
+// --- porque hlc-31-S es un registro aparte del sistema de casos. Sin copia local en el tel. ---
+const SUPABASE_URL = "https://abchojqugeywrzqktgpm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2hvanF1Z2V5d3J6cWt0Z3BtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NjkyMTMsImV4cCI6MjEwMzI0NTIxM30.VjbcoWi-F3QwN5tTjmmO6mcMhZVdSI_6X7qdxoK694E";
+
+// La interfaz no debe quedar en blanco si un CDN o Supabase no está disponible.
+// El cliente se inicializa de forma defensiva y el formulario puede abrir igual.
+let sb = null;
+try {
+  if (typeof supabase !== 'undefined' && supabase && typeof supabase.createClient === 'function') {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } else {
+    console.error('HLC31: supabase-js no está disponible.');
+  }
+} catch (e) {
+  console.error('HLC31: no se pudo inicializar Supabase.', e);
+}
+
+// Protección de acceso: HLC-31-S solo puede abrirse con una sesión aprobada.
+(async function protegerFormulario(){
+  if (!sb) {
+    document.body.innerHTML = '<main style="font-family:Arial,sans-serif;padding:40px;text-align:center"><h2>Acceso no disponible</h2><p>No se pudo verificar la sesión. Volvé a la pantalla de acceso.</p><a href="index.html">Ir al acceso</a></main>';
+    return;
+  }
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      const destino = location.pathname.split('/').pop() + location.search;
+      location.replace('index.html?redirect=' + encodeURIComponent(destino));
+      return;
+    }
+    const { data: perfil } = await sb.from('profiles').select('aprobado').eq('id', session.user.id).single();
+    if (!perfil || !perfil.aprobado) {
+      await sb.auth.signOut();
+      location.replace('index.html');
+    }
+  } catch (e) {
+    console.error('No se pudo validar el acceso al HLC-31-S:', e);
+    location.replace('index.html');
+  }
+})();
+
+// Zonas: catálogo administrado en Supabase. No se hardcodean localidades.
+async function cargarZonasHLC31() {
+  const select = document.getElementById('campo-sector');
+  if (!select || !sb) {
+    if (!sb) console.error('HLC31: no se pueden cargar las zonas porque Supabase no está disponible.');
+    return;
+  }
+  const valorActual = select.value;
+  try {
+    const { data, error } = await sb.from('zonas').select('nombre').eq('activa', true).order('nombre');
+    if (error) {
+      console.error('No se pudieron cargar las zonas:', error);
+      return;
+    }
+    select.innerHTML = '<option value="">Seleccioná una zona...</option>';
+    (data || []).forEach(z => {
+      const option = document.createElement('option');
+      option.value = z.nombre;
+      option.textContent = z.nombre;
+      select.appendChild(option);
+    });
+    // Si se edita un registro histórico cuyo valor no pertenece al catálogo actual,
+    // se conserva exactamente como estaba, sin inventarlo ni reemplazarlo.
+    if (valorActual && !Array.from(select.options).some(o => o.value === valorActual)) {
+      const option = document.createElement('option');
+      option.value = valorActual;
+      option.textContent = valorActual + ' (histórico)';
+      select.appendChild(option);
+    }
+    select.value = valorActual;
+  } catch (e) {
+    console.error('HLC31: error cargando zonas.', e);
+  }
+}
+
+window.zonasHLC31Ready = cargarZonasHLC31();
+const BUCKET_ADJUNTOS = 'casos-adjuntos';
+let registroSupabaseId = null; // se completa al crear el registro, o al cargar uno existente con ?editar=
+let pdfSubidoOriginalBytes = null; // si se subió un PDF ya completado por fuera, acá quedan sus bytes
+let pdfSubidoOriginalNombre = null;
+let pdfSubidoEsEditable = false; // true si al leerlo se reconocieron campos del formulario
+
+// estado_medico y tipo_relacion_ceh viven en el DOM con estos nombres históricos, pero
+// se guardan en las columnas reales "estado" y "tipo_colaboracion" de registros_hlc31
+// (no en el jsonb "datos", para no duplicar el dato).
+const CAMPOS_COLUMNA_REAL = { estado_medico: 'estado', tipo_relacion_ceh: 'tipo_colaboracion' };
+
+// Lee del formulario los dos campos que van a columnas reales de Supabase.
+function recolectarColumnasReales() {
+  const estadoEl = document.querySelector('[data-field="estado_medico"]');
+  const tipoEl = document.querySelector('[data-field="tipo_relacion_ceh"]');
+  return {
+    estado: (estadoEl && estadoEl.value) || 'Activo',
+    tipo_colaboracion: (tipoEl && tipoEl.value) || 'No'
+  };
+}
+
+// Junta los valores actuales del formulario en un objeto simple, para guardarlos como "datos" del registro.
+function recolectarDatosFormulario() {
+  const datos = {};
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const campo = el.dataset.field;
+    if (campo in CAMPOS_COLUMNA_REAL) return; // van aparte, como columna real
+    const type = el.dataset.type;
+    if (type === 'check' || type === 'check-fixed') {
+      datos[campo] = !!el.checked;
+    } else if (type === 'radio2' || type === 'radio2-text') {
+      const marcado = el.querySelector('input[data-radio-value]:checked');
+      datos[campo] = marcado ? marcado.dataset.radioValue : '';
+    } else if (type === 'datetime') {
+      const dateInput = el.querySelector('input[type=date]');
+      const timeInput = el.querySelector('input[type=time]');
+      datos[campo] = { fecha: dateInput ? dateInput.value : '', hora: timeInput ? timeInput.value : '' };
+    } else {
+      datos[campo] = el.value || '';
+    }
+  });
+  return datos;
+}
+
+// Inversa de recolectarDatosFormulario: precarga los campos en pantalla desde un registro real de Supabase.
+function precargarDatosFormulario(datos) {
+  let conDatos = 0;
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const campo = el.dataset.field;
+    const type = el.dataset.type;
+    if (!datos || !(campo in datos)) return;
+    const valor = datos[campo];
+    const wrapper = el.closest('.fld, .chk');
+    try {
+      if (type === 'check' || type === 'check-fixed') {
+        el.checked = !!valor;
+        if (valor) { conDatos++; if (wrapper) wrapper.classList.add('prefilled'); }
+      } else if (type === 'radio2' || type === 'radio2-text') {
+        el.querySelectorAll('input[data-radio-value]').forEach(cb => { cb.checked = (cb.dataset.radioValue === valor); });
+        if (valor) { conDatos++; const details = el.closest('details'); if (details) details.open = true; }
+      } else if (type === 'datetime') {
+        const dateInput = el.querySelector('input[type=date]');
+        const timeInput = el.querySelector('input[type=time]');
+        if (valor && (valor.fecha || valor.hora)) {
+          if (dateInput) dateInput.value = valor.fecha || '';
+          if (timeInput) timeInput.value = valor.hora || '';
+          conDatos++;
+        }
+      } else {
+        el.value = valor || '';
+        if (valor) { conDatos++; if (wrapper) wrapper.classList.add('prefilled'); const details = el.closest('details'); if (details) details.open = true; }
+      }
+    } catch (e) { /* campo no reconocido, se ignora */ }
+  });
+  return conDatos;
+}
+
+// Si venimos de "Editar" (menu.html → Historial) con ?editar=<id de registro>, lo cargamos real desde Supabase.
+(async function cargarRegistroParaEditarSiCorresponde() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('editar');
+  if (!id) return;
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = "Cargando registro...";
+  const { data: registro, error } = await sb.from('registros_hlc31').select('id, datos, estado, tipo_colaboracion').eq('id', id).single();
+  if (error || !registro) {
+    statusEl.textContent = "No se encontró ese registro.";
+    return;
+  }
+  registroSupabaseId = registro.id;
+  await window.zonasHLC31Ready;
+  const datosRegistro = registro.datos || {};
+  const zonaHistorica = (datosRegistro.sector_zona_ceh || '').trim();
+  const selectZona = document.getElementById('campo-sector');
+  if (zonaHistorica && selectZona && !Array.from(selectZona.options).some(o => o.value === zonaHistorica)) {
+    const option = document.createElement('option');
+    option.value = zonaHistorica;
+    option.textContent = zonaHistorica + ' (histórico)';
+    selectZona.appendChild(option);
+  }
+  const conDatos = precargarDatosFormulario(datosRegistro);
+  // estado y tipo_colaboracion viven en columnas reales, no en el jsonb "datos".
+  const estadoEl = document.querySelector('[data-field="estado_medico"]');
+  const tipoEl = document.querySelector('[data-field="tipo_relacion_ceh"]');
+  if (estadoEl) estadoEl.value = registro.estado || 'Activo';
+  if (tipoEl) tipoEl.value = registro.tipo_colaboracion || 'No';
+  statusEl.textContent = `Editando este registro. Se cargaron ${conDatos} campos.`;
+})();
+
+// Crea (o actualiza, si ya existe en esta página) el registro en Supabase.
+function normalizarClaveHLC31(valor) {
+  return String(valor || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function normalizarTelefonoHLC31(valor) {
+  return String(valor || '').replace(/\D/g, '');
+}
+
+function especialidadesHLC31(datos) {
+  return [
+    datos['900_24_HLC_Skills'],
+    datos['900_25_HLC_Skills'],
+    datos['900_26_HLC_Skills']
+  ].map(normalizarClaveHLC31).filter(Boolean);
+}
+
+function datosCoincidenciaHLC31(actual, existente) {
+  const coincidencias = [];
+
+  const nombreA = normalizarClaveHLC31(actual['900_10_Text_SanSerif']);
+  const nombreB = normalizarClaveHLC31(existente['900_10_Text_SanSerif']);
+  const apellidoA = normalizarClaveHLC31(actual['900_11_Text_SanSerif']);
+  const apellidoB = normalizarClaveHLC31(existente['900_11_Text_SanSerif']);
+
+  if (nombreA && nombreB && nombreA === nombreB) coincidencias.push('Nombre');
+  if (apellidoA && apellidoB && apellidoA === apellidoB) coincidencias.push('Apellidos');
+
+  const hospitalA = normalizarClaveHLC31(actual['hospital_sector_ceh']);
+  const hospitalB = normalizarClaveHLC31(existente['hospital_sector_ceh']);
+  if (hospitalA && hospitalB && hospitalA === hospitalB) coincidencias.push('Hospital');
+
+  const localidadA = normalizarClaveHLC31(actual['900_19_Text_SanSerif']);
+  const localidadB = normalizarClaveHLC31(existente['900_19_Text_SanSerif']);
+  if (localidadA && localidadB && localidadA === localidadB) coincidencias.push('Localidad');
+
+  const emailA = normalizarClaveHLC31(actual['900_14_Text_SanSerif']);
+  const emailB = normalizarClaveHLC31(existente['900_14_Text_SanSerif']);
+  if (emailA && emailB && emailA === emailB) coincidencias.push('Correo electrónico');
+
+  const movilA = normalizarTelefonoHLC31(actual['900_13_Text_SanSerif']);
+  const movilB = normalizarTelefonoHLC31(existente['900_13_Text_SanSerif']);
+  const fijoA = normalizarTelefonoHLC31(actual['900_12_Text_SanSerif']);
+  const fijoB = normalizarTelefonoHLC31(existente['900_12_Text_SanSerif']);
+  if (movilA && movilB && movilA === movilB) coincidencias.push('Teléfono móvil');
+  if (fijoA && fijoB && fijoA === fijoB) coincidencias.push('Teléfono fijo');
+
+  const especialidadesActuales = [
+    ['900_24_HLC_Skills', 'Especialidad 1'],
+    ['900_25_HLC_Skills', 'Especialidad 2'],
+    ['900_26_HLC_Skills', 'Especialidad 3']
+  ].map(([campo, etiqueta]) => [normalizarClaveHLC31(actual[campo]), etiqueta]);
+
+  const especialidadesExistentes = [
+    existente['900_24_HLC_Skills'],
+    existente['900_25_HLC_Skills'],
+    existente['900_26_HLC_Skills']
+  ].map(normalizarClaveHLC31).filter(Boolean);
+
+  especialidadesActuales.forEach(([valor, etiqueta]) => {
+    if (valor && especialidadesExistentes.includes(valor)) coincidencias.push(etiqueta);
+  });
+
+  return coincidencias;
+}
+
+function puntajeCoincidenciaHLC31(coincidencias) {
+  let puntos = 0;
+  coincidencias.forEach(campo => {
+    if (campo === 'Correo electrónico' || campo === 'Teléfono móvil' || campo === 'Teléfono fijo') puntos += 5;
+    else if (campo === 'Nombre' || campo === 'Apellidos') puntos += 2;
+    else if (campo === 'Hospital') puntos += 3;
+    else puntos += 1;
+  });
+  return puntos;
+}
+
+async function buscarCoincidenciasHLC31(datosActuales) {
+  if (!sb) return [];
+
+  const nombre = normalizarClaveHLC31(datosActuales['900_10_Text_SanSerif']);
+  const apellido = normalizarClaveHLC31(datosActuales['900_11_Text_SanSerif']);
+  const email = normalizarClaveHLC31(datosActuales['900_14_Text_SanSerif']);
+  const movil = normalizarTelefonoHLC31(datosActuales['900_13_Text_SanSerif']);
+  const fijo = normalizarTelefonoHLC31(datosActuales['900_12_Text_SanSerif']);
+  const hospital = normalizarClaveHLC31(datosActuales['hospital_sector_ceh']);
+  const localidad = normalizarClaveHLC31(datosActuales['900_19_Text_SanSerif']);
+  const especialidad1 = normalizarClaveHLC31(datosActuales['900_24_HLC_Skills']);
+  const especialidad2 = normalizarClaveHLC31(datosActuales['900_25_HLC_Skills']);
+  const especialidad3 = normalizarClaveHLC31(datosActuales['900_26_HLC_Skills']);
+  const tieneBaseParaBuscar = nombre || apellido || email || movil || fijo || hospital || localidad ||
+    especialidad1 || especialidad2 || especialidad3;
+  if (!tieneBaseParaBuscar) return [];
+
+  const todas = [];
+  const TAM_BLOQUE = 500;
+  let desde = 0;
+
+  while (true) {
+    const { data, error } = await sb.from('registros_hlc31')
+      .select('id, datos, estado, tipo_colaboracion')
+      .order('fecha', { ascending: false })
+      .range(desde, desde + TAM_BLOQUE - 1);
+    if (error) throw error;
+
+    const bloque = data || [];
+    todas.push(...bloque);
+    if (bloque.length < TAM_BLOQUE) break;
+    desde += TAM_BLOQUE;
+  }
+
+  return todas
+    .filter(r => String(r.id) !== String(registroSupabaseId || ''))
+    .map(r => {
+      const d = r.datos || {};
+      const coincidencias = datosCoincidenciaHLC31(datosActuales, d);
+      return {
+        ...r,
+        coincidencias,
+        puntaje: puntajeCoincidenciaHLC31(coincidencias)
+      };
+    })
+    .filter(r => {
+      // La localidad, el hospital o una especialidad por sí solos NO identifican
+      // a una persona. Para mostrar un candidato necesitamos identidad completa
+      // (nombre + apellido) o un dato de contacto inequívoco.
+      const identidadCompleta = r.coincidencias.includes('Nombre') && r.coincidencias.includes('Apellidos');
+      const contactoFuerte = r.coincidencias.includes('Correo electrónico') ||
+        r.coincidencias.includes('Teléfono móvil') ||
+        r.coincidencias.includes('Teléfono fijo');
+      return (identidadCompleta || contactoFuerte) && !coincidenciasHLC31Descartadas.has(String(r.id));
+    })
+    .sort((a, b) => b.puntaje - a.puntaje);
+}
+
+function nombreRegistroHLC31(registro) {
+  const d = registro?.datos || {};
+  return [d['900_10_Text_SanSerif'], d['900_11_Text_SanSerif']]
+    .filter(Boolean).join(' ').trim() || 'este colaborador';
+}
+
+function detalleCoincidenciaHLC31(registro) {
+  const d = registro?.datos || {};
+  const partes = [];
+  if (d['hospital_sector_ceh']) partes.push('Hospital: ' + d['hospital_sector_ceh']);
+  if (d['900_19_Text_SanSerif']) partes.push('Localidad: ' + d['900_19_Text_SanSerif']);
+  return partes.join(' · ');
+}
+
+const coincidenciasHLC31Anunciadas = new Set();
+const coincidenciasHLC31Previas = new Map();
+let temporizadorChequeoHLC31 = null;
+let secuenciaChequeoHLC31 = 0;
+const parametrosHLC31 = new URLSearchParams(window.location.search);
+const flujoCoincidenciaHLC31 = parametrosHLC31.get('hlc31_flow') || ('hlc31-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+const coincidenciasHLC31Descartadas = new Set();
+let canalCoincidenciasHLC31 = null;
+
+function abrirRegistroCoincidenciaHLC31(id) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('editar', String(id));
+  url.searchParams.set('hlc31_flow', flujoCoincidenciaHLC31);
+  window.open(url.toString(), '_blank');
+}
+
+function mostrarCoincidenciaHLC31(registro, campo) {
+  const id = String(registro.id);
+  const clave = `${id}|${campo}`;
+  if (coincidenciasHLC31Anunciadas.has(clave)) return;
+
+  coincidenciasHLC31Anunciadas.add(clave);
+
+  alert(
+    `Se encontró una posible coincidencia.\n\n` +
+    `Campo que coincide: ${campo}\n` +
+    `Registro encontrado: ${nombreRegistroHLC31(registro)}\n\n` +
+    `La coincidencia no significa necesariamente que sea la misma persona. ` +
+    `Podés seguir completando el formulario y luego consultar el registro desde el botón flotante.`
+  );
+}
+
+function mapaCamposCoincidenciaHLC31() {
+  return {
+    'Nombre': '900_10_Text_SanSerif',
+    'Apellidos': '900_11_Text_SanSerif',
+    'Hospital': 'hospital_sector_ceh',
+    'Localidad': '900_19_Text_SanSerif',
+    'Correo electrónico': '900_14_Text_SanSerif',
+    'Teléfono móvil': '900_13_Text_SanSerif',
+    'Teléfono fijo': '900_12_Text_SanSerif',
+    'Especialidad 1': '900_24_HLC_Skills',
+    'Especialidad 2': '900_25_HLC_Skills',
+    'Especialidad 3': '900_26_HLC_Skills'
+  };
+}
+
+function marcarCamposCoincidenciaHLC31(coincidencias) {
+  document.querySelectorAll('.hlc31-alerta-campo').forEach(el => el.remove());
+
+  const mapa = mapaCamposCoincidenciaHLC31();
+  const camposMarcados = new Set();
+
+  coincidencias.forEach(registro => {
+    registro.coincidencias.forEach(campo => {
+      const dataField = mapa[campo];
+      if (!dataField || camposMarcados.has(dataField)) return;
+
+      const el = document.querySelector(`[data-field="${dataField}"]`);
+      const wrapper = el?.closest('.fld');
+      const etiqueta = wrapper?.querySelector('span');
+      if (!el || !wrapper || !etiqueta) return;
+
+      const indicador = document.createElement('span');
+      indicador.className = 'hlc31-alerta-campo';
+      indicador.title = `Coincidencia detectada en ${campo}`;
+      indicador.setAttribute('aria-label', `Coincidencia detectada en ${campo}`);
+      etiqueta.appendChild(indicador);
+      camposMarcados.add(dataField);
+    });
+  });
+}
+
+function actualizarBotonFlotanteCoincidenciasHLC31(coincidencias) {
+  const contenedor = document.getElementById('hlc31-flotante-coincidencias');
+  const boton = document.getElementById('hlc31-flotante-boton');
+  const lista = document.getElementById('hlc31-flotante-lista');
+  if (!contenedor || !boton || !lista) return;
+
+  lista.innerHTML = '';
+
+  if (!coincidencias.length) {
+    contenedor.classList.remove('visible');
+    lista.classList.remove('abierta');
+    return;
+  }
+
+  contenedor.classList.add('visible');
+
+  if (coincidencias.length === 1) {
+    const registro = coincidencias[0];
+    boton.textContent = `⚠️ Ver registro: ${nombreRegistroHLC31(registro)}`;
+    boton.onclick = () => abrirRegistroCoincidenciaHLC31(registro.id);
+    return;
+  }
+
+  boton.textContent = `⚠️ Ver registros con coincidencias (${coincidencias.length})`;
+  boton.onclick = () => lista.classList.toggle('abierta');
+
+  coincidencias.forEach(registro => {
+    const item = document.createElement('div');
+    item.className = 'hlc31-flotante-item';
+
+    const texto = document.createElement('span');
+    texto.textContent = `${nombreRegistroHLC31(registro)} — ${registro.coincidencias.join(', ')}`;
+
+    const abrir = document.createElement('button');
+    abrir.type = 'button';
+    abrir.textContent = 'Abrir';
+    abrir.addEventListener('click', () => abrirRegistroCoincidenciaHLC31(registro.id));
+
+    item.appendChild(texto);
+    item.appendChild(abrir);
+    lista.appendChild(item);
+  });
+}
+
+function renderizarAvisosCoincidenciasHLC31(coincidencias) {
+  const previas = coincidenciasHLC31Previas;
+
+  marcarCamposCoincidenciaHLC31(coincidencias);
+  actualizarBotonFlotanteCoincidenciasHLC31(coincidencias);
+
+  const actuales = new Map();
+
+  coincidencias.forEach(registro => {
+    const id = String(registro.id);
+    const camposActuales = new Set(registro.coincidencias);
+    actuales.set(id, camposActuales);
+
+    const camposPrevios = previas.get(id) || new Set();
+    registro.coincidencias.forEach(campo => {
+      if (!camposPrevios.has(campo)) {
+        mostrarCoincidenciaHLC31(registro, campo);
+      }
+    });
+  });
+
+  coincidenciasHLC31Previas.clear();
+  actuales.forEach((campos, id) => coincidenciasHLC31Previas.set(id, campos));
+
+  const idsActivos = new Set(actuales.keys());
+  Array.from(coincidenciasHLC31Anunciadas).forEach(clave => {
+    const id = clave.split('|')[0];
+    if (!idsActivos.has(id)) coincidenciasHLC31Anunciadas.delete(clave);
+  });
+}
+
+function configurarComunicacionCoincidenciaHLC31() {
+  try {
+    canalCoincidenciasHLC31 = new BroadcastChannel('formapp-hlc31-' + flujoCoincidenciaHLC31);
+    canalCoincidenciasHLC31.addEventListener('message', evento => {
+      const datos = evento.data || {};
+      const id = String(datos.id || '');
+      if (!id) return;
+
+      if (datos.tipo === 'descartar-coincidencia') {
+        // B confirmó que NO es la misma persona: B se cierra y A continúa.
+        coincidenciasHLC31Descartadas.add(id);
+        ejecutarChequeoDuplicadosHLC31();
+        return;
+      }
+
+      if (datos.tipo === 'usar-registro') {
+        // B confirmó que SÍ es la misma persona: A descarta la ficha nueva
+        // y vuelve a la pantalla anterior sin guardar un registro duplicado.
+        history.back();
+      }
+    });
+  } catch (e) {
+    console.warn('HLC31: no se pudo iniciar el canal de coincidencias.', e);
+  }
+}
+
+function configurarVistaDeRevisionHLC31() {
+  const id = parametrosHLC31.get('editar');
+  const flow = parametrosHLC31.get('hlc31_flow');
+  const panel = document.getElementById('hlc31-volver-coincidencia');
+  const volver = document.getElementById('hlc31-btn-volver-formulario');
+  const mismo = document.getElementById('hlc31-btn-mismo-medico');
+  const descartar = document.getElementById('hlc31-btn-descartar-coincidencia');
+  if (!id || !flow || !panel || !volver || !mismo || !descartar) return;
+
+  panel.classList.add('visible');
+  volver.addEventListener('click', () => {
+    window.close();
+    setTimeout(() => { if (!window.closed) history.back(); }, 100);
+  });
+
+  mismo.addEventListener('click', () => {
+    const mensaje = { tipo: 'usar-registro', id: String(id) };
+    try {
+      const canal = new BroadcastChannel('formapp-hlc31-' + flow);
+      canal.postMessage(mensaje);
+      setTimeout(() => canal.close(), 200);
+    } catch (e) {}
+    // Este es el registro B: permanece abierto para editarlo o usarlo.
+  });
+
+  descartar.addEventListener('click', () => {
+    const mensaje = { tipo: 'descartar-coincidencia', id: String(id) };
+    try {
+      const canal = new BroadcastChannel('formapp-hlc31-' + flow);
+      canal.postMessage(mensaje);
+      setTimeout(() => canal.close(), 200);
+    } catch (e) {}
+    window.close();
+    setTimeout(() => { if (!window.closed) history.back(); }, 100);
+  });
+}
+
+async function ejecutarChequeoDuplicadosHLC31() {
+  if (registroSupabaseId) return;
+
+  const datos = recolectarDatosFormulario();
+  const nombre = normalizarClaveHLC31(datos['900_10_Text_SanSerif']);
+  const apellido = normalizarClaveHLC31(datos['900_11_Text_SanSerif']);
+
+  if (!nombre && !apellido && !datos['900_14_Text_SanSerif'] &&
+      !datos['900_13_Text_SanSerif'] && !datos['900_12_Text_SanSerif'] &&
+      !datos['hospital_sector_ceh'] && !datos['900_19_Text_SanSerif'] &&
+      !datos['900_24_HLC_Skills'] && !datos['900_25_HLC_Skills'] &&
+      !datos['900_26_HLC_Skills']) {
+    const secuenciaActual = ++secuenciaChequeoHLC31;
+    renderizarAvisosCoincidenciasHLC31([]);
+    return secuenciaActual;
+  }
+
+  const miSecuencia = ++secuenciaChequeoHLC31;
+
+  try {
+    const coincidencias = await buscarCoincidenciasHLC31(datos);
+    if (miSecuencia !== secuenciaChequeoHLC31 || registroSupabaseId) return;
+
+    renderizarAvisosCoincidenciasHLC31(coincidencias);
+  } catch (e) {
+    if (miSecuencia === secuenciaChequeoHLC31) {
+      console.error('No se pudieron comprobar coincidencias HLC31:', e);
+    }
+  }
+}
+
+function programarChequeoDuplicadosHLC31() {
+  clearTimeout(temporizadorChequeoHLC31);
+  temporizadorChequeoHLC31 = setTimeout(ejecutarChequeoDuplicadosHLC31, 600);
+}
+
+function instalarChequeoDuplicadosHLC31() {
+  [
+    '900_10_Text_SanSerif',
+    '900_11_Text_SanSerif',
+    'hospital_sector_ceh',
+    '900_19_Text_SanSerif',
+    '900_14_Text_SanSerif',
+    '900_13_Text_SanSerif',
+    '900_12_Text_SanSerif',
+    '900_24_HLC_Skills',
+    '900_25_HLC_Skills',
+    '900_26_HLC_Skills'
+  ].forEach(campo => {
+    const el = document.querySelector(`[data-field="${campo}"]`);
+    if (!el) return;
+    el.addEventListener('input', programarChequeoDuplicadosHLC31);
+    el.addEventListener('change', programarChequeoDuplicadosHLC31);
+  });
+}
+
+instalarChequeoDuplicadosHLC31();
+configurarComunicacionCoincidenciaHLC31();
+configurarVistaDeRevisionHLC31();
+
+// Compatibilidad con la comprobación existente al guardar: última defensa.
+// Un nombre/apellido coincidente por sí solo NO bloquea la creación.
+// Se bloquea si hay una coincidencia fuerte (teléfono/correo), o si coinciden
+// identidad completa + hospital/localidad.
+async function verificarDuplicadoHLC31(datosActuales) {
+  const coincidencias = await buscarCoincidenciasHLC31(datosActuales);
+  const fuerte = coincidencias.find(r => {
+    const tieneContactoFuerte = r.coincidencias.includes('Correo electrónico') ||
+      r.coincidencias.includes('Teléfono móvil') ||
+      r.coincidencias.includes('Teléfono fijo');
+    const identidadCompleta = r.coincidencias.includes('Nombre') &&
+      r.coincidencias.includes('Apellidos') &&
+      r.coincidencias.includes('Hospital') &&
+      (r.coincidencias.includes('Localidad') || r.puntaje >= 8);
+    return tieneContactoFuerte || identidadCompleta;
+  });
+  return fuerte || null;
+}
+
+async function crearOActualizarRegistroEnSupabase(pdfBytes) {
+  const statusEl = document.getElementById('status');
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return false;
+
+    if (registroSupabaseId) {
+      await sb.from('registros_hlc31').update({ datos: recolectarDatosFormulario(), ...recolectarColumnasReales() }).eq('id', registroSupabaseId);
+      const ruta = `hlc31/registro_${registroSupabaseId}.pdf`;
+      await sb.storage.from(BUCKET_ADJUNTOS).upload(ruta, pdfBytes, { contentType: 'application/pdf', upsert: true });
+      statusEl.textContent += ' Cambios guardados.';
+      return true;
+    }
+
+    const datosNuevos = recolectarDatosFormulario();
+    const duplicado = await verificarDuplicadoHLC31(datosNuevos);
+    if (duplicado) {
+      alert(
+        `Ya existe un registro con una coincidencia fuerte.\n\n` +
+        `"${nombreRegistroHLC31(duplicado)}"\n` +
+        `Coincidencias: ${duplicado.coincidencias.join(', ')}\n\n` +
+        `Esta ficha nueva NO se guardará. Podés consultar el registro existente desde el botón flotante.`
+      );
+      statusEl.textContent += ' No se creó un registro nuevo porque existe una coincidencia fuerte.';
+      return false;
+    }
+
+    const { data: registro, error: errorRegistro } = await sb
+      .from('registros_hlc31')
+      .insert({ autor_id: user.id, datos: datosNuevos, ...recolectarColumnasReales() })
+      .select().single();
+    if (errorRegistro) throw errorRegistro;
+    registroSupabaseId = registro.id;
+
+    const ruta = `hlc31/registro_${registro.id}.pdf`;
+    const bytesParaAdjuntar = (pdfSubidoOriginalBytes && !pdfSubidoEsEditable) ? pdfSubidoOriginalBytes : pdfBytes;
+    const { error: errorSubida } = await sb.storage.from(BUCKET_ADJUNTOS).upload(ruta, bytesParaAdjuntar, { contentType: 'application/pdf', upsert: true });
+    if (!errorSubida) {
+      await sb.from('registros_hlc31').update({ ruta_storage: ruta, nombre_original: lastFilename }).eq('id', registro.id);
+    }
+
+    statusEl.textContent += ' Registro guardado.';
+    return true;
+  } catch (e) {
+    console.error('No se pudo guardar el registro en Supabase:', e);
+    statusEl.textContent += ' (No se pudo guardar: ' + e.message + ')';
+    return false;
+  }
+}
+
+function mostrarGuardadoCorrectamente() {
+  const overlay = document.getElementById('save-success-overlay');
+  if (overlay) overlay.classList.add('open');
+
+  // Dejamos visible el aviso un instante para que se alcance a leer y luego
+  // volvemos automáticamente al listado de Médicos colaboradores.
+  setTimeout(() => {
+    window.location.href = 'menu.html?tab=historial';
+  }, 1400);
+}
 
 // --- Perfil del CEH: se guarda en este celular, se autocompleta la próxima vez ---
 const PROFILE_KEY = 'ceh_perfil_v1';
@@ -236,18 +1151,12 @@ document.querySelectorAll('.wa-btn').forEach(btn => {
   });
 });
 
-document.getElementById('upload-pdf').addEventListener('change', async (e) => {
-  const statusEl = document.getElementById('status');
-  const file = e.target.files[0];
-  if (!file) return;
-  statusEl.textContent = "Leyendo PDF cargado...";
-  try {
-    const { PDFDocument } = PDFLib;
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const pdfDoc = await PDFDocument.load(bytes);
-    const form = pdfDoc.getForm();
-    let conDatos = 0;
-    document.querySelectorAll('[data-field]').forEach(el => {
+async function cargarCamposDesdeBytes(bytes) {
+  const { PDFDocument } = PDFLib;
+  const pdfDoc = await PDFDocument.load(bytes);
+  const form = pdfDoc.getForm();
+  let conDatos = 0;
+  document.querySelectorAll('[data-field]').forEach(el => {
       const fieldName = el.dataset.field;
       const type = el.dataset.type;
       const wrapper = el.closest('.fld, .chk');
@@ -321,15 +1230,87 @@ document.getElementById('upload-pdf').addEventListener('change', async (e) => {
       }
     } catch (err) { }
 
-    statusEl.textContent = `Se cargaron ${conDatos} campos ya completados. El resto quedó libre para que lo completes.`;
+  return conDatos;
+}
+
+document.getElementById('upload-pdf').addEventListener('change', async (e) => {
+  const statusEl = document.getElementById('status');
+  const file = e.target.files[0];
+  if (!file) return;
+  statusEl.textContent = "Leyendo PDF cargado...";
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    pdfSubidoOriginalBytes = bytes;
+    pdfSubidoOriginalNombre = file.name;
+    const conDatos = await cargarCamposDesdeBytes(bytes);
+    pdfSubidoEsEditable = conDatos > 0;
+    statusEl.textContent = conDatos > 0
+      ? `Se cargaron ${conDatos} campos ya completados. El resto quedó libre para que lo completes.`
+      : "No se reconoció ningún campo del formulario en ese PDF. Se va a adjuntar tal cual al guardar.";
   } catch (err) {
     statusEl.textContent = "No se pudo leer ese PDF: " + err.message;
     console.error(err);
   }
 });
 
-document.getElementById('generar').addEventListener('click', async () => {
+// El sistema de "editar" ahora vive enteramente en cargarRegistroParaEditarSiCorresponde() (más arriba),
+// que lee el registro real desde Supabase — ya no hay historial local en este dispositivo.
+
+// Valida los datos esenciales del médico antes de guardar. Si falta algo, avisa
+// con un mensaje claro y lleva al primer campo faltante.
+function validarCamposObligatorios() {
+  const faltantes = [];
+  let primerEl = null;
+  let primerWrapper = null;
+
+  function marcarFaltante(el, etiqueta, wrapper) {
+    faltantes.push(etiqueta);
+    if (!primerEl) { primerEl = el; primerWrapper = wrapper || (el && el.closest('.fld, .chk')); }
+  }
+
+  function chequearTexto(selector, etiqueta) {
+    const el = document.querySelector(selector);
+    if (!el || !el.value.trim()) marcarFaltante(el, etiqueta);
+  }
+
+  chequearTexto('[data-field="900_11_Text_SanSerif"]', 'Apellido');
+  chequearTexto('[data-field="900_10_Text_SanSerif"]', 'Nombre');
+  chequearTexto('[data-field="900_24_HLC_Skills"]', 'Especialidad 1');
+  chequearTexto('[data-field="900_19_Text_SanSerif"]', 'Localidad');
+
+  const telFijo = document.querySelector('[data-field="900_12_Text_SanSerif"]');
+  const telMovil = document.querySelector('[data-field="900_13_Text_SanSerif"]');
+  if (!(telFijo && telFijo.value.trim()) && !(telMovil && telMovil.value.trim())) {
+    marcarFaltante(telFijo, 'Teléfono (fijo o móvil)');
+  }
+
+  chequearTexto('[data-field="tipo_relacion_ceh"]', 'Consultor / Colaborador / No');
+  chequearTexto('[data-field="estado_medico"]', 'Estado del médico');
+
+  // La zona/sector operativo es un catálogo administrado. Hospital/sector CEH queda separado en Datos del médico.
+  const campoSector = document.getElementById('campo-sector');
+  if (!campoSector || !campoSector.value.trim()) {
+    marcarFaltante(campoSector, 'Zona / sector donde se está trabajando', document.getElementById('campo-sector-wrapper'));
+  }
+
+  if (faltantes.length) {
+    alert('Faltan completar estos campos obligatorios antes de guardar:\n\n- ' + faltantes.join('\n- '));
+    if (primerEl) {
+      const details = primerEl.closest('details') || (primerWrapper && primerWrapper.closest('details'));
+      if (details) details.open = true;
+      (primerWrapper || primerEl).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      primerEl.focus();
+    }
+    return false;
+  }
+  return true;
+}
+
+async function generarPDF() {
   const statusEl = document.getElementById('status');
+
+  if (!validarCamposObligatorios()) return false;
+
   statusEl.textContent = "Generando...";
   saveProfile();
   try {
@@ -388,60 +1369,234 @@ document.getElementById('generar').addEventListener('click', async () => {
     } catch (e) { console.warn('Congregación:', e); }
     const pdfBytes = await pdfDoc.save();
     lastBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+    // Versión "plana": los mismos datos pero convertidos en texto fijo (ya no editable).
+    // Se usa solo para compartir/ver, así se muestra bien en cualquier vista previa
+    // (WhatsApp, notificación de descarga, etc). La versión editable de arriba (lastBlob)
+    // es la que se guarda en el historial y sirve para volver a cargarla y seguir editando.
+    try {
+      const flatDoc = await PDFDocument.load(pdfBytes);
+      flatDoc.getForm().flatten();
+      const flatBytes = await flatDoc.save();
+      lastFlatBlob = new Blob([flatBytes], { type: 'application/pdf' });
+    } catch (e) {
+      console.warn('No se pudo generar la versión plana, se usará la editable:', e);
+      lastFlatBlob = lastBlob;
+    }
+
     const nombreInput = document.querySelector('[data-field="900_10_Text_SanSerif"]');
     const apellidoInput = document.querySelector('[data-field="900_11_Text_SanSerif"]');
     const nombreCompleto = ((nombreInput ? nombreInput.value.trim() : '') + '-' + (apellidoInput ? apellidoInput.value.trim() : '')).replace(/^-|-$/g,'').replace(/\s+/g, '-');
     const hoy = new Date().toISOString().slice(0,10);
     lastFilename = `hlc-31-S_${nombreCompleto || 'sin-nombre'}_${hoy}.pdf`;
 
-    // Guardar en el historial local (nunca en la nube)
-    try {
-      const b64Out = btoa(String.fromCharCode(...pdfBytes));
-      const etiqueta = ((nombreInput ? nombreInput.value.trim() : '') + ' ' + (apellidoInput ? apellidoInput.value.trim() : '')).trim() || 'Sin nombre';
-      const registro = {
-        id: 'h' + Date.now(),
-        formType: 'hlc-31-S',
-        formFile: 'hlc31_prototipo.html',
-        formLabel: 'Datos de contacto CEH',
-        label: etiqueta,
-        date: new Date().toISOString(),
-        filename: lastFilename,
-        pdfBase64: b64Out
-      };
-      const HIST_KEY = 'hlc_historial_v1';
-      let hist = [];
-      try { hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch (e) { hist = []; }
-      hist.unshift(registro);
-      if (hist.length > 30) hist = hist.slice(0, 30);
-      localStorage.setItem(HIST_KEY, JSON.stringify(hist));
-    } catch (e) { console.warn('No se pudo guardar en el historial local:', e); }
-    document.getElementById('compartir').style.display = 'block';
-    document.getElementById('descargar').style.display = 'block';
-    statusEl.textContent = "Listo. Usá Descargar para guardarlo o Compartir para mandarlo por WhatsApp/mail.";
+    statusEl.textContent = "Listo. Usá Descargar para guardarlo.";
+
+    // Guardar (o actualizar) el registro compartido en Supabase — esta es la única copia que existe.
+    const guardadoCorrecto = await crearOActualizarRegistroEnSupabase(pdfBytes);
+    if (guardadoCorrecto) mostrarGuardadoCorrectamente();
+
+    // Recordatorios según lo configurado en la pestaña Configuración (index.html).
+    const cfg = getConfig();
+    const recordatorios = document.getElementById('recordatorios');
+    recordatorios.innerHTML = '';
+    if (cfg.driveEnabled && cfg.driveFolderLink) {
+      const div = document.createElement('div');
+      div.className = 'recordatorio';
+      div.innerHTML = `📁 Recordá guardarlo en la carpeta de Drive del comité. <a href="${cfg.driveFolderLink}" target="_blank" rel="noopener">Abrir carpeta</a>`;
+      recordatorios.appendChild(div);
+    }
+    if (cfg.correoEnabled && cfg.correoDestino) {
+      const div = document.createElement('div');
+      div.className = 'recordatorio';
+      const asunto = encodeURIComponent(lastFilename);
+      div.innerHTML = `✉️ Recordá enviarlo por correo. <a href="mailto:${cfg.correoDestino}?subject=${asunto}">Preparar correo</a> (adjuntá el PDF que descargaste)`;
+      recordatorios.appendChild(div);
+    }
+    return true;
   } catch (e) {
     statusEl.textContent = "Error al generar: " + e.message;
     console.error(e);
+    return false;
   }
-});
+}
 
-document.getElementById('descargar').addEventListener('click', () => {
-  if (!lastBlob) return;
-  const url = URL.createObjectURL(lastBlob);
-  const a = document.createElement('a');
-  a.href = url; a.download = lastFilename; a.click();
-});
 
-document.getElementById('compartir').addEventListener('click', async () => {
+// Comparte un registro que fue importado desde Excel y que todavía no tiene PDF en Storage.
+// Se genera el mismo PDF HLC-31-S usando los datos guardados, sin pasar por la validación
+// de edición (los contactos no médicos pueden no tener especialidad médica).
+async function generarYCompartirRegistroHLC31(id) {
   const statusEl = document.getElementById('status');
-  if (!lastBlob) return;
-  const file = new File([lastBlob], lastFilename, { type: 'application/pdf' });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Datos de contacto CEH' }); }
-    catch (e) { statusEl.textContent = "Se canceló el envío."; }
-  } else {
-    statusEl.textContent = "Este navegador no soporta compartir archivos directamente (probá en el celular). Usá Descargar y compartilo manualmente.";
+  try {
+    if (!sb) throw new Error('Supabase no está disponible.');
+    statusEl.textContent = 'Preparando PDF para compartir...';
+    const { data: registro, error } = await sb.from('registros_hlc31')
+      .select('id, datos, estado, tipo_colaboracion, ruta_storage, nombre_original')
+      .eq('id', id).single();
+    if (error || !registro) throw error || new Error('No se encontró el registro.');
+
+    // Si ya existe el PDF en Storage, usamos ese archivo directamente.
+    if (registro.ruta_storage) {
+      const { data: blob, error: dlError } = await sb.storage.from(BUCKET_ADJUNTOS).download(registro.ruta_storage);
+      if (!dlError && blob) {
+        const datosCompartir = registro.datos || {};
+        const telefono = String(datosCompartir['900_13_Text_SanSerif'] || datosCompartir['900_12_Text_SanSerif'] || '').trim();
+        const incluirTelefono = telefono
+          ? confirm(`¿Querés incluir el teléfono ${telefono} al compartir este médico?`)
+          : false;
+        const textoCompartir = incluirTelefono ? `HLC-31-S\nTeléfono: ${telefono}` : 'HLC-31-S';
+        await compartirBlobHLC31(blob, registro.nombre_original || nombreArchivoHLC31(registro.datos), textoCompartir);
+        return true;
+      }
+    }
+
+    const datos = registro.datos || {};
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await PDFDocument.load(b64ToBytes(PDF_B64));
+    const form = pdfDoc.getForm();
+
+    const setText = (campo, valor) => {
+      try { form.getTextField(campo).setText(valor == null ? '' : String(valor)); } catch (_) {}
+    };
+    const setCheck = (campo, valor) => {
+      try { const cb = form.getCheckBox(campo); if (valor) cb.check(); else cb.uncheck(); } catch (_) {}
+    };
+    const setSelect = (campo, valor) => {
+      try { if (valor) form.getDropdown(campo).select(String(valor)); } catch (_) {}
+    };
+
+    setText('900_10_Text_SanSerif', datos['900_10_Text_SanSerif']);
+    setText('900_11_Text_SanSerif', datos['900_11_Text_SanSerif']);
+    setText('900_12_Text_SanSerif', datos['900_12_Text_SanSerif']);
+    setText('900_13_Text_SanSerif', datos['900_13_Text_SanSerif']);
+    setText('900_19_Text_SanSerif', datos['900_19_Text_SanSerif']);
+    setText('900_20_Text_SanSerif', datos['900_20_Text_SanSerif']);
+
+    setSelect('900_24_HLC_Skills', datos['900_24_HLC_Skills']);
+    setText('900_27_HLC_Skills', datos['900_27_HLC_Skills']);
+    setSelect('900_25_HLC_Skills', datos['900_25_HLC_Skills']);
+    setText('900_28_HLC_Skills', datos['900_28_HLC_Skills']);
+    setSelect('900_26_HLC_Skills', datos['900_26_HLC_Skills']);
+    setText('900_29_HLC_Skills', datos['900_29_HLC_Skills']);
+
+    // Los contactos no médicos pueden traer una especialidad/rol libre (ej. Abogado,
+    // Director). El PDF tiene selects médicos, por lo que conservamos esos textos en Comentarios.
+    const rolesLibres = ['900_24_HLC_Skills','900_25_HLC_Skills','900_26_HLC_Skills']
+      .map(k => datos[k] || '')
+      .filter(v => v && !/^\d+$/.test(String(v)));
+    const comentarios = String(datos['900_8_Text_MultiLine_SanSerif'] || '').trim();
+    const extra = rolesLibres.length ? `Rol/es o especialidad/es informada/s en Excel: ${rolesLibres.join(' / ')}` : '';
+    setText('900_8_Text_MultiLine_SanSerif', [comentarios, extra].filter(Boolean).join('\n'));
+
+    setSelect('tipo_relacion_ceh', registro.tipo_colaboracion || 'No');
+    setSelect('estado_medico', registro.estado || 'Activo');
+
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const nombre = nombreArchivoHLC31(datos);
+
+    // Guardamos el PDF generado para que la próxima vez Compartir no tenga que generarlo.
+    const ruta = `hlc31/registro_${registro.id}.pdf`;
+    const { error: upError } = await sb.storage.from(BUCKET_ADJUNTOS)
+      .upload(ruta, pdfBytes, { contentType: 'application/pdf', upsert: true });
+    if (upError) throw upError;
+
+    const { error: updateError } = await sb.from('registros_hlc31')
+      .update({ ruta_storage: ruta, nombre_original: nombre })
+      .eq('id', registro.id);
+    if (updateError) throw updateError;
+
+    const telefono = String(datos['900_13_Text_SanSerif'] || datos['900_12_Text_SanSerif'] || '').trim();
+    const incluirTelefono = telefono
+      ? confirm(`¿Querés incluir el teléfono ${telefono} al compartir este médico?`)
+      : false;
+    const textoCompartir = incluirTelefono ? `HLC-31-S\nTeléfono: ${telefono}` : 'HLC-31-S';
+    await compartirBlobHLC31(blob, nombre, textoCompartir);
+    return true;
+  } catch (e) {
+    statusEl.textContent = 'No se pudo preparar el PDF: ' + e.message;
+    console.error('HLC31 compartir:', e);
+    return false;
   }
+}
+
+function nombreArchivoHLC31(datos) {
+  const nombre = String(datos?.['900_10_Text_SanSerif'] || '').trim();
+  const apellido = String(datos?.['900_11_Text_SanSerif'] || '').trim();
+  const base = [nombre, apellido].filter(Boolean).join('-').replace(/\s+/g, '-').replace(/[^a-zA-Z0-9À-ÿ_-]/g, '-');
+  const hoy = new Date().toISOString().slice(0,10);
+  return `hlc-31-S_${base || 'sin-nombre'}_${hoy}.pdf`;
+}
+
+async function compartirBlobHLC31(blob, nombre, texto = 'HLC-31-S') {
+  const statusEl = document.getElementById('status');
+  const archivo = new File([blob], nombre, { type: 'application/pdf' });
+  if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [archivo] }))) {
+    try {
+      await navigator.share({ title: nombre, text: texto, files: [archivo] });
+      statusEl.textContent = 'PDF listo para compartir.';
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') { statusEl.textContent = 'Compartir cancelado.'; return; }
+    }
+  }
+  triggerDownload(blob, nombre);
+  statusEl.textContent = 'El dispositivo no permite compartir archivos directamente; se descargó el PDF.';
+}
+
+document.getElementById('generar').addEventListener('click', async () => {
+  const ok = await generarPDF();
+  if (!ok) return;
+  document.getElementById('generar').style.display = 'none';
+  document.getElementById('descargar').style.display = 'block';
 });
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 1000);
+}
+
+document.getElementById('filename-cancel').addEventListener('click', () => {
+  document.getElementById('filename-modal-overlay').classList.remove('open');
+});
+
+document.getElementById('filename-confirm').addEventListener('click', () => {
+  let nombre = document.getElementById('filename-input').value.trim();
+  if (!nombre) nombre = 'formulario';
+  nombre = nombre.replace(/[\\\/:*?"<>|]/g, '-');
+  lastFilename = /\.pdf$/i.test(nombre) ? nombre : nombre + '.pdf';
+  document.getElementById('filename-modal-overlay').classList.remove('open');
+
+  triggerDownload(lastBlob, lastFilename);
+});
+
+document.getElementById('descargar').addEventListener('click', async () => {
+  const ok = await generarPDF();
+  if (!ok || !lastBlob) return;
+  const base = lastFilename.replace(/\.pdf$/i, '');
+  document.getElementById('filename-input').value = base;
+  document.getElementById('filename-modal-overlay').classList.add('open');
+  document.getElementById('filename-input').focus();
+});
+
+</script>
+<script>
+// Entrada usada por el botón Compartir del listado de Médicos colaboradores.
+(async function compartirDesdeListadoSiCorresponde() {
+  const id = new URLSearchParams(location.search).get('compartir');
+  if (!id) return;
+  const ok = await generarYCompartirRegistroHLC31(id);
+  if (ok) setTimeout(() => { window.location.href = 'menu.html?tab=historial'; }, 500);
+})();
 </script>
 <script>
 if ("serviceWorker" in navigator) {
@@ -450,5 +1605,7 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+
+
 </body>
 </html>

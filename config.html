@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<!-- config.html version 1.1 — cancelar bloqueo pendiente -->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f5d50">
+<title>Panel de administración</title>
+<style>
+  :root { --paper: #f6f4ef; --ink: #1f2a24; --line: #c9c2b3; --accent: #2f5d50; --accent-soft: #e4ece8; --danger: #8a3b2b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Iowan Old Style', 'Georgia', serif; padding-bottom: 60px; }
+  header { padding: 28px 20px 18px; border-bottom: 2px solid var(--ink); }
+  header a.back { font-family: -apple-system, sans-serif; font-size: 13px; color: var(--accent); text-decoration: none; }
+  header h1 { margin: 10px 0 4px; font-size: 22px; }
+  header p { margin: 0; font-size: 13px; color: #5a5347; font-family: -apple-system, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
+  h2.section-title { font-size: 14px; font-family: -apple-system, sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); margin: 24px 0 10px; }
+  h2.section-title:first-child { margin-top: 0; }
+  .persona { background: #fffdf9; border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; margin-bottom: 10px; font-family: -apple-system, sans-serif; display: flex; align-items: center; gap: 12px; }
+  .persona .info { flex: 1; min-width: 0; }
+  .persona .email { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .persona .fecha { font-size: 11.5px; color: #8a8375; }
+  .persona button { font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 700; padding: 9px 14px; border-radius: 5px; border: none; cursor: pointer; background: var(--accent); color: #fff; flex-shrink: 0; }
+  .persona.aprobado-item .email { color: #5a5347; }
+  .persona button.quitar { background: none; color: var(--danger); }
+  .empty-state { font-family: -apple-system, sans-serif; font-size: 13px; color: #8a8375; text-align: center; padding: 20px 12px; border: 1px dashed var(--line); border-radius: 6px; }
+  .solicitud { background: #fdf7ec; border: 1px solid #e0c793; border-radius: 6px; padding: 14px 16px; margin-bottom: 10px; font-family: -apple-system, sans-serif; }
+  .solicitud .titulo { font-weight: 600; font-size: 14px; }
+  .solicitud .detalle { font-size: 12px; color: #8a8375; margin-top: 3px; }
+  .solicitud .estado-espera { font-size: 12.5px; color: var(--accent); margin-top: 8px; }
+  .solicitud .btns { display: flex; gap: 8px; margin-top: 10px; }
+  .solicitud .btns button { font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 5px; border: none; cursor: pointer; }
+  .solicitud .btns button.confirmar { background: var(--accent); color: #fff; }
+  .solicitud .btns button.rechazar { background: none; color: var(--danger); border: 1px solid var(--danger); }
+  .persona .btns-persona { display: flex; gap: 6px; flex-shrink: 0; }
+  .persona-actions { position: relative; flex-shrink: 0; }
+  .persona-actions-toggle {
+    width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 50%;
+    background: #fffdf9; color: var(--ink); cursor: pointer;
+    font-family: -apple-system, sans-serif; font-size: 21px; font-weight: 700;
+    line-height: 1; display: flex; align-items: center; justify-content: center;
+  }
+  .persona-actions-menu {
+    display: none; position: absolute; right: 0; top: 44px; z-index: 20;
+    min-width: 190px; padding: 6px; background: #fffdf9;
+    border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 5px 16px rgba(0,0,0,.16);
+  }
+  .persona-actions.open .persona-actions-menu { display: flex; flex-direction: column; gap: 3px; }
+  .persona-actions-menu button {
+    width: 100%; border: 0; border-radius: 6px; padding: 10px 12px;
+    background: transparent; color: var(--ink); text-align: left;
+    font: 600 13px -apple-system, sans-serif; cursor: pointer;
+  }
+  .persona-actions-menu button:hover { background: var(--accent-soft); }
+  .persona-actions-menu button.danger { color: var(--danger); }
+  .persona button.secundario { background: var(--accent-soft); color: var(--accent); }
+  .modulo-nota { font-family: -apple-system, sans-serif; font-size: 12.5px; color: #5a5347; margin: 0 0 14px; line-height: 1.5; }
+  .excel-tools-medicos { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .excel-btn { font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 600; padding: 9px 14px; border-radius: 5px; border: 1px solid var(--line); background: #fffdf9; color: var(--ink); cursor: pointer; }
+  .excel-btn.importar { border-color: var(--danger); color: var(--danger); }
+  .excel-status-line { font-family: -apple-system, sans-serif; font-size: 12.5px; color: #5a5347; margin: 0 0 4px; }
+
+  .catalogo { background:#fffdf9; border:1px solid var(--line); border-radius:6px; padding:14px 16px; margin-bottom:16px; font-family:-apple-system,sans-serif; }
+  .catalogo-form { display:flex; gap:8px; margin-bottom:12px; }
+  .catalogo-form input { flex:1; min-width:0; border:1px solid var(--line); border-radius:5px; padding:9px 10px; font:13px -apple-system,sans-serif; background:#fff; }
+  .catalogo-form button { border:0; border-radius:5px; padding:9px 14px; font:700 13px -apple-system,sans-serif; background:var(--accent); color:#fff; cursor:pointer; }
+  .catalogo-item { display:flex; align-items:center; gap:8px; padding:9px 0; border-top:1px solid #e5e0d7; }
+  .catalogo-item:first-child { border-top:0; }
+  .catalogo-item .nombre { flex:1; min-width:0; font-size:13px; }
+  .catalogo-item .estado { font-size:11px; color:#8a8375; }
+  .catalogo-item button { border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:4px; padding:6px 9px; font:600 12px -apple-system,sans-serif; cursor:pointer; }
+  .catalogo-item button.desactivar { color:var(--danger); border-color:#d7b8af; }
+  .catalogo-item.inactiva { opacity:.55; }
+  .catalogo-status { font-size:12px; color:#8a8375; margin-top:8px; }
+
+  .compartir-box {
+    background:#fffdf9;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:14px 16px;
+    margin-bottom:16px;
+    font-family:-apple-system,sans-serif;
+  }
+  .compartir-form {
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .compartir-form select {
+    flex:1;
+    min-width:220px;
+    border:1px solid var(--line);
+    border-radius:5px;
+    padding:9px 10px;
+    font:13px -apple-system,sans-serif;
+    background:#fff;
+    color:var(--ink);
+  }
+  .compartir-form button {
+    border:0;
+    border-radius:5px;
+    padding:9px 14px;
+    font:700 13px -apple-system,sans-serif;
+    background:var(--accent);
+    color:#fff;
+    cursor:pointer;
+  }
+  .compartir-lista {
+    margin-top:12px;
+  }
+  .compartir-item {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:9px 0;
+    border-top:1px solid #e5e0d7;
+  }
+  .compartir-item:first-child { border-top:0; }
+  .compartir-item .nombre {
+    flex:1;
+    min-width:0;
+    font-size:13px;
+  }
+  .compartir-item .estado {
+    font-size:11px;
+    color:#8a8375;
+  }
+  .compartir-item button {
+    border:1px solid #d7b8af;
+    background:#fff;
+    color:var(--danger);
+    border-radius:4px;
+    padding:6px 9px;
+    font:600 12px -apple-system,sans-serif;
+    cursor:pointer;
+  }
+
+  .acceso-restringido-panel {
+    margin-top: 22px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fffdf9;
+    overflow: hidden;
+  }
+  .acceso-restringido-panel summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    font-family: -apple-system, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .acceso-restringido-panel summary::-webkit-details-marker { display:none; }
+  .acceso-restringido-panel summary::after {
+    content: '＋';
+    float: right;
+    font-size: 18px;
+  }
+  .acceso-restringido-panel[open] summary::after { content: '−'; }
+  .acceso-restringido-contenido {
+    padding: 0 12px 12px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="menu.html">‹ Volver</a>
+  <h1>Panel de administración</h1>
+  <p>Acá aprobás a las personas nuevas que se registran en la app.</p>
+</header>
+
+<main id="main-content">
+  <p style="font-family:-apple-system, sans-serif; color:#8a8375; text-align:center;">Cargando...</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const SUPABASE_URL = "https://abchojqugeywrzqktgpm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2hvanF1Z2V5d3J6cWt0Z3BtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NjkyMTMsImV4cCI6MjEwMzI0NTIxM30.VjbcoWi-F3QwN5tTjmmO6mcMhZVdSI_6X7qdxoK694E";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const main = document.getElementById('main-content');
+
+function escHtml(valor) {
+  return String(valor ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c]));
+}
+
+const ESPECIALIDADES_BASE = [
+  'Anestesiología','Cardiología','Cirugía cardíaca','Cirugía colorrectal','Cirugía general',
+  'Cirugía ortopédica','Cirugía vascular','Gastroenterología','Ginecología','Hematología',
+  'Hospitalista','Medicina de urgencias','Medicina intensiva','Médico Clínico','Nefrología',
+  'Neonatología','Neumología','Neurocirugía','Obstetricia','Oncología','Oncología ginecológica',
+  'Otorrinolaringología','Pediatría','Traumatología','Urología'
+];
+
+async function cargarCatalogo(nombreTabla, titulo, descripcion, inputId, listaId, statusId, opciones={}) {
+  const { data, error } = await sb.from(nombreTabla).select('id,nombre,activa').order('nombre');
+  const lista = document.getElementById(listaId);
+  const status = document.getElementById(statusId);
+
+  if (error) {
+    lista.innerHTML = '<div class="empty-state">No se pudo cargar este catálogo: ' + escHtml(error.message) + '</div>';
+    status.textContent = 'Si la tabla todavía no existe en Supabase, ejecutá el SQL de configuración preparado junto con este archivo.';
+    return;
+  }
+
+  status.textContent = '';
+
+  lista.innerHTML = (data || []).length
+    ? data.map(item => `
+      <div class="catalogo-item ${item.activa === false ? 'inactiva' : ''}">
+        <span class="nombre">${escHtml(item.nombre)}</span>
+        <span class="estado">${item.activa === false ? 'Inactiva' : 'Activa'}</span>
+        <button data-catalogo-action="renombrar"
+                data-tabla="${nombreTabla}"
+                data-id="${item.id}"
+                data-nombre="${escHtml(item.nombre)}">Renombrar</button>
+        <button class="${item.activa === false ? '' : 'desactivar'}"
+                data-catalogo-action="toggle"
+                data-tabla="${nombreTabla}"
+                data-id="${item.id}"
+                data-activa="${item.activa !== false}">
+          ${item.activa === false ? 'Activar' : 'Desactivar'}
+        </button>
+      </div>`).join('')
+    : '<div class="empty-state">No hay elementos cargados todavía.</div>';
+
+  lista.querySelectorAll('[data-catalogo-action="renombrar"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const actual = btn.dataset.nombre;
+      const nuevo = prompt('Nuevo nombre:', actual);
+      if (nuevo === null) return;
+
+      const nombre = nuevo.trim();
+      if (!nombre || nombre === actual) return;
+
+      const { error } = await sb.from(nombreTabla)
+        .update({ nombre })
+        .eq('id', btn.dataset.id);
+
+      if (error) {
+        alert('No se pudo renombrar: ' + error.message);
+        return;
+      }
+
+      cargarCatalogo(nombreTabla, titulo, descripcion, inputId, listaId, statusId, opciones);
+    });
+  });
+
+  lista.querySelectorAll('[data-catalogo-action="toggle"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const activa = btn.dataset.activa === 'true';
+      const accion = activa ? 'desactivar' : 'activar';
+
+      if (!confirm(`¿Querés ${accion} este elemento?`)) return;
+
+      const { error } = await sb.from(nombreTabla)
+        .update({ activa: !activa })
+        .eq('id', btn.dataset.id);
+
+      if (error) {
+        alert('No se pudo cambiar el estado: ' + error.message);
+        return;
+      }
+
+      cargarCatalogo(nombreTabla, titulo, descripcion, inputId, listaId, statusId, opciones);
+    });
+  });
+}
+
+async function agregarCatalogo(nombreTabla, inputId, listaId, statusId, titulo, descripcion, opciones={}) {
+  const input = document.getElementById(inputId);
+  const nombre = input.value.trim();
+
+  if (!nombre) {
+    input.focus();
+    return;
+  }
+
+  const { error } = await sb.from(nombreTabla).insert({
+    nombre,
+    activa: true
+  });
+
+  if (error) {
+    alert('No se pudo agregar: ' + error.message);
+    return;
+  }
+
+  input.value = '';
+
+  await cargarCatalogo(
+    nombreTabla,
+    titulo,
+    descripcion,
+    inputId,
+    listaId,
+    statusId,
+    opciones
+  );
+}
+
+function renderCatalogos() {
+  const zona = document.createElement('section');
+
+  zona.innerHTML = `
+    <h2 class="section-title">Zonas</h2>
+    <div class="catalogo">
+      <p class="modulo-nota">
+        Configurá las zonas o sectores operativos de este comité.
+        Son independientes de Localidad y de Hospital / Sector (CEH).
+      </p>
+
+      <div class="catalogo-form">
+        <input id="input-nueva-zona"
+               placeholder="Ej.: Zona Norte"
+               autocomplete="off">
+        <button type="button" id="btn-agregar-zona">Agregar zona</button>
+      </div>
+
+      <div id="lista-zonas"></div>
+      <div id="status-zonas" class="catalogo-status"></div>
+    </div>
+
+    <h2 class="section-title">Especialidades</h2>
+    <div class="catalogo">
+      <p class="modulo-nota">
+        Catálogo de especialidades disponible para los Médicos colaboradores.
+        No se borran elementos: se pueden desactivar para conservar los datos históricos.
+      </p>
+
+      <div class="catalogo-form">
+        <input id="input-nueva-especialidad"
+               placeholder="Ej.: Infectología"
+               autocomplete="off">
+        <button type="button" id="btn-agregar-especialidad">Agregar especialidad</button>
+      </div>
+
+      <div id="lista-especialidades"></div>
+      <div id="status-especialidades" class="catalogo-status"></div>
+    </div>
+  `;
+
+  main.appendChild(zona);
+
+  document.getElementById('btn-agregar-zona').addEventListener('click', () =>
+    agregarCatalogo(
+      'zonas',
+      'input-nueva-zona',
+      'lista-zonas',
+      'status-zonas',
+      'Zonas',
+      ''
+    )
+  );
+
+  document.getElementById('input-nueva-zona').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      agregarCatalogo(
+        'zonas',
+        'input-nueva-zona',
+        'lista-zonas',
+        'status-zonas',
+        'Zonas',
+        ''
+      );
+    }
+  });
+
+  document.getElementById('btn-agregar-especialidad').addEventListener('click', () =>
+    agregarCatalogo(
+      'especialidades',
+      'input-nueva-especialidad',
+      'lista-especialidades',
+      'status-especialidades',
+      'Especialidades',
+      ''
+    )
+  );
+
+  document.getElementById('input-nueva-especialidad').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      agregarCatalogo(
+        'especialidades',
+        'input-nueva-especialidad',
+        'lista-especialidades',
+        'status-especialidades',
+        'Especialidades',
+        ''
+      );
+    }
+  });
+
+  cargarCatalogo(
+    'zonas',
+    'Zonas',
+    '',
+    'input-nueva-zona',
+    'lista-zonas',
+    'status-zonas'
+  );
+
+  cargarCatalogo(
+    'especialidades',
+    'Especialidades',
+    '',
+    'input-nueva-especialidad',
+    'lista-especialidades',
+    'status-especialidades'
+  );
+}
+
+/* =========================================================
+   MÉDICOS COLABORADORES
+   ========================================================= */
+
+let ESPECIALIDADES = [];
+
+function especialidadLabel(valor) {
+  if (!valor) return '';
+
+  const encontrada = ESPECIALIDADES.find(([v]) => v === String(valor));
+
+  return encontrada ? encontrada[1] : valor;
+}
+
+function valorEspecialidadDesdeTexto(texto) {
+  const t = (texto || '').trim();
+
+  if (!t) return '';
+
+  const encontrada = ESPECIALIDADES.find(
+    ([, label]) => label.toLowerCase() === t.toLowerCase()
+  );
+
+  return encontrada ? encontrada[0] : t;
+}
+
+const EXCEL_COLUMNAS = [
+  'Apellido',
+  'Nombre',
+  'Teléfono fijo',
+  'Teléfono móvil',
+  'Localidad',
+  'Provincia o estado',
+  'Zona',
+  'Hospital / Sector (CEH)',
+  'Especialidad 1',
+  'Subespecialidad 1',
+  'Especialidad 2',
+  'Subespecialidad 2',
+  'Especialidad 3',
+  'Subespecialidad 3',
+  'Estado del médico (Activo/Inactivo)',
+  'Tipo de colaboración (Consultor/Colaborador/No)',
+  'Comentarios'
+];
+
+function fmtFecha(iso) {
+  const d = new Date(iso);
+
+  return d.toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }) + ' ' +
+  d.toLocaleTimeString('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+let miId = null;
+
+async function cargar() {
+  const {
+    data: { user }
+  } = await sb.auth.getUser();
+
+  if (!user) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  miId = user.id;
+
+  const { data: miPerfil } = await sb.from('profiles')
+    .select('es_admin')
+    .eq('id', user.id)
+    .single();
+
+  if (!miPerfil || !miPerfil.es_admin) {
+    main.innerHTML = `
+      <div class="empty-state">
+        Esta sección es solo para administradores del comité.
+      </div>
+    `;
+    return;
+  }
+
+  const {
+    data: perfiles,
+    error
+  } = await sb.from('profiles')
+    .select('id, email, aprobado, bloqueado, created_at, es_admin')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    main.innerHTML = `
+      <div class="empty-state">
+        Error al cargar: ${escHtml(error.message)}
+      </div>
+    `;
+    return;
+  }
+
+  const { data: solicitudes } = await sb.from('solicitudes_admin')
+    .select('*')
+    .eq('estado', 'pendiente')
+    .order('created_at', { ascending: false });
+
+  const totalAdmins = perfiles.filter(p => p.es_admin).length;
+  const pendientes = perfiles.filter(p => !p.aprobado && !p.bloqueado);
+  const aprobados = perfiles.filter(p => p.aprobado && !p.bloqueado);
+  const restringidos = perfiles.filter(p => p.bloqueado);
+
+  let html = '';
+
+  html += `
+    <h2 class="section-title">
+      Decisiones pendientes de confirmación (${solicitudes ? solicitudes.length : 0})
+    </h2>
+  `;
+
+  if (!solicitudes || solicitudes.length === 0) {
+    html += `
+      <div class="empty-state">
+        No hay decisiones esperando confirmación.
+      </div>
+    `;
+  } else {
+    const etiquetas = {
+      hacer_admin: 'Hacer administrador a',
+      quitar_admin: 'Quitar como administrador a',
+      desvincular: 'Restringir el acceso de',
+      restringir_acceso: 'Restringir el acceso de',
+      reactivar_acceso: 'Reactivar el acceso de'
+    };
+
+    solicitudes.forEach(s => {
+      const yaConfirme = (s.confirmaciones || []).includes(miId);
+      const soyElProponente = s.propuesto_por === miId;
+
+      html += `
+        <div class="solicitud" data-id="${s.id}">
+          <div class="titulo">
+            ${escHtml(etiquetas[s.tipo] || s.tipo)}:
+            ${escHtml(s.objetivo_email)}
+          </div>
+
+          <div class="detalle">
+            Confirmaron ${(s.confirmaciones || []).length}
+            de ${totalAdmins} administradores
+          </div>
+      `;
+
+      if (soyElProponente) {
+        html += `
+          <div class="estado-espera">
+            Vos la propusiste — esperando que confirmen los demás administradores.
+          </div>
+        `;
+        if (s.tipo === 'restringir_acceso' || s.tipo === 'desvincular') {
+          html += `
+            <div class="btns">
+              <button class="rechazar"
+                      data-action="cancelar-solicitud"
+                      data-id="${s.id}">
+                Cancelar bloqueo
+              </button>
+            </div>
+          `;
+        }
+      } else if (yaConfirme) {
+        html += `
+          <div class="estado-espera">
+            Ya confirmaste — esperando a los demás administradores.
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="btns">
+            <button class="confirmar"
+                    data-action="confirmar-solicitud"
+                    data-id="${s.id}">
+              Confirmar
+            </button>
+
+            <button class="rechazar"
+                    data-action="rechazar-solicitud"
+                    data-id="${s.id}">
+              Rechazar
+            </button>
+          </div>
+        `;
+      }
+
+      html += '</div>';
+    });
+  }
+
+  html += `
+    <h2 class="section-title">
+      Esperando aprobación (${pendientes.length})
+    </h2>
+  `;
+
+  if (pendientes.length === 0) {
+    html += `
+      <div class="empty-state">
+        No hay nadie esperando aprobación.
+      </div>
+    `;
+  } else {
+    pendientes.forEach(p => {
+      html += `
+        <div class="persona">
+          <span class="info">
+            <span class="email">${escHtml(p.email)}</span><br>
+            <span class="fecha">
+              Se registró: ${fmtFecha(p.created_at)}
+            </span>
+          </span>
+
+          <button data-action="aprobar" data-id="${p.id}">
+            Aprobar
+          </button>
+        </div>
+      `;
+    });
+  }
+
+  html += `
+    <h2 class="section-title">
+      Miembros aprobados (${aprobados.length})
+    </h2>
+    <p class="modulo-nota">
+      Para restringir el acceso de un miembro se necesita la confirmación
+      de los demás administradores.
+    </p>
+  `;
+
+  if (aprobados.length === 0) {
+    html += `
+      <div class="empty-state">
+        Todavía no hay miembros aprobados.
+      </div>
+    `;
+  } else {
+    aprobados.forEach(p => {
+      let botones = '';
+
+      if (p.es_admin) {
+        if (totalAdmins > 1) {
+          botones = `
+            <div class="persona-actions">
+              <button type="button" class="persona-actions-toggle"
+                      data-action="abrir-acciones"
+                      aria-label="Abrir acciones"
+                      title="Acciones">⋮</button>
+              <div class="persona-actions-menu">
+                <button data-action="proponer-quitar-admin"
+                        data-id="${p.id}"
+                        data-email="${escHtml(p.email)}">
+                  Quitar admin
+                </button>
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        botones = `
+          <div class="persona-actions">
+            <button type="button" class="persona-actions-toggle"
+                    data-action="abrir-acciones"
+                    aria-label="Abrir acciones"
+                    title="Acciones">⋮</button>
+            <div class="persona-actions-menu">
+              <button data-action="proponer-hacer-admin"
+                      data-id="${p.id}"
+                      data-email="${escHtml(p.email)}">
+                Hacer admin
+              </button>
+              <button class="danger"
+                      data-action="proponer-desvincular"
+                      data-id="${p.id}"
+                      data-email="${escHtml(p.email)}">
+                Restringir acceso
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      html += `
+        <div class="persona aprobado-item">
+          <span class="info">
+            <span class="email">
+              ${escHtml(p.email)}${p.es_admin ? ' (admin)' : ''}
+            </span><br>
+
+            <span class="fecha">
+              Desde: ${fmtFecha(p.created_at)}
+            </span>
+          </span>
+
+          <span class="btns-persona">
+            ${botones}
+          </span>
+        </div>
+      `;
+    });
+  }
+
+  html += `
+    <details class="acceso-restringido-panel">
+      <summary>
+        Acceso restringido (${restringidos.length})
+      </summary>
+      <div class="acceso-restringido-contenido">
+  `;
+
+  if (restringidos.length === 0) {
+    html += `
+        <div class="empty-state">
+          No hay usuarios con acceso restringido.
+        </div>
+    `;
+  } else {
+    restringidos.forEach(p => {
+      html += `
+        <div class="persona">
+          <span class="info">
+            <span class="email">${escHtml(p.email || 'Sin correo')}</span><br>
+            <span class="fecha">
+              Desde: ${fmtFecha(p.created_at)}
+            </span>
+          </span>
+
+          <span class="btns-persona">
+            <div class="persona-actions">
+              <button type="button" class="persona-actions-toggle"
+                      data-action="abrir-acciones"
+                      aria-label="Abrir acciones"
+                      title="Acciones">⋮</button>
+              <div class="persona-actions-menu">
+                <button data-action="proponer-reactivar-acceso"
+                        data-id="${p.id}"
+                        data-email="${escHtml(p.email || '')}">
+                  Reactivar acceso
+                </button>
+              </div>
+            </div>
+          </span>
+        </div>
+      `;
+    });
+  }
+
+  html += `
+      </div>
+    </details>
+  `;
+
+  const {
+    data: especialidadesCatalogo
+  } = await sb.from('especialidades')
+    .select('id,nombre')
+    .eq('activa', true)
+    .order('nombre');
+
+  ESPECIALIDADES = (especialidadesCatalogo || [])
+    .map(e => [String(e.id), e.nombre]);
+
+  html += '<div id="catalogos-admin"></div>';
+
+  html += `
+    <h2 class="section-title">
+      Médicos colaboradores — Datos (Excel)
+    </h2>
+
+    <p class="modulo-nota">
+      Herramientas para administrar en bloque los datos del formulario
+      hlc-31-S (Médicos colaboradores). Importar puede crear muchos
+      registros nuevos de una sola vez — revisá el archivo antes de subirlo.
+      No modifica ni borra registros existentes.
+    </p>
+
+    <div class="excel-tools-medicos">
+      <button type="button"
+              id="btn-plantilla-excel-medicos"
+              class="excel-btn">
+        ⬇ Descargar plantilla Excel
+      </button>
+
+      <button type="button"
+              id="btn-exportar-excel-medicos"
+              class="excel-btn">
+        ⬇ Exportar a Excel
+      </button>
+
+      <button type="button"
+              id="btn-importar-excel-medicos"
+              class="excel-btn importar">
+        ⬆ Importar Excel
+      </button>
+
+      <input type="file"
+             id="input-importar-excel-medicos"
+             accept=".xlsx,.xls"
+             style="display:none;">
+    </div>
+
+    <div id="excel-status-medicos"
+         class="excel-status-line"></div>
+  `;
+
+  main.innerHTML = html;
+
+  renderCatalogos();
+
+  /* =========================================================
+     PLANTILLA EXCEL
+     ========================================================= */
+
+  document.getElementById('btn-plantilla-excel-medicos')
+    .addEventListener('click', async () => {
+
+      const statusEl =
+        document.getElementById('excel-status-medicos');
+
+      statusEl.textContent = 'Preparando plantilla...';
+
+      const [
+        { data: zonas },
+        { data: especialidades }
+      ] = await Promise.all([
+        sb.from('zonas')
+          .select('nombre')
+          .eq('activa', true)
+          .order('nombre'),
+
+        sb.from('especialidades')
+          .select('nombre')
+          .eq('activa', true)
+          .order('nombre')
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet([
+        EXCEL_COLUMNAS
+      ]);
+
+      ws['!cols'] =
+        EXCEL_COLUMNAS.map(() => ({ wch: 24 }));
+
+      const wb = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        'Médicos colaboradores'
+      );
+
+      const info = [
+        ['INSTRUCCIONES'],
+        [
+          'Zona',
+          'Debe coincidir exactamente con una Zona activa configurada en el sistema.'
+        ],
+        [
+          'Localidad',
+          'Es la localidad del médico; no reemplazar por Zona.'
+        ],
+        [
+          'Hospital / Sector (CEH)',
+          'Es independiente de Zona y Localidad.'
+        ],
+        [
+          'Especialidades',
+          'Deben coincidir con especialidades activas del sistema.'
+        ],
+        [],
+        ['ZONAS ACTIVAS'],
+        ...((zonas || []).map(z => [z.nombre])),
+        [],
+        ['ESPECIALIDADES ACTIVAS'],
+        ...((especialidades || []).map(e => [e.nombre]))
+      ];
+
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.aoa_to_sheet(info),
+        'Instrucciones'
+      );
+
+      XLSX.writeFile(
+        wb,
+        'plantilla_medicos_colaboradores.xlsx'
+      );
+
+      statusEl.textContent =
+        'Plantilla generada con las Zonas y Especialidades activas actuales.';
+    });
+
+  /* =========================================================
+     EXPORTAR EXCEL
+     ========================================================= */
+
+  document.getElementById('btn-exportar-excel-medicos')
+    .addEventListener('click', async () => {
+
+      const statusEl =
+        document.getElementById('excel-status-medicos');
+
+      statusEl.textContent =
+        'Preparando exportación...';
+
+      const {
+        data,
+        error
+      } = await sb.from('registros_hlc31')
+        .select('datos, nombre_original, estado, tipo_colaboracion')
+        .order('fecha', { ascending: false });
+
+      if (error) {
+        statusEl.textContent =
+          'No se pudo exportar: ' + error.message;
+        return;
+      }
+
+      const filas = (data || []).map(r => {
+        const d = r.datos || {};
+
+        return {
+          'Apellido':
+            d['900_11_Text_SanSerif'] || '',
+
+          'Nombre':
+            d['900_10_Text_SanSerif'] || '',
+
+          'Teléfono fijo':
+            d['900_12_Text_SanSerif'] || '',
+
+          'Teléfono móvil':
+            d['900_13_Text_SanSerif'] || '',
+
+          'Localidad':
+            d['900_19_Text_SanSerif'] || '',
+
+          'Provincia o estado':
+            d['900_20_Text_SanSerif'] || '',
+
+          'Zona':
+            d['sector_zona_ceh'] || '',
+
+          'Hospital / Sector (CEH)':
+            d['hospital_sector_ceh'] || '',
+
+          'Especialidad 1':
+            especialidadLabel(d['900_24_HLC_Skills']),
+
+          'Subespecialidad 1':
+            d['900_27_HLC_Skills'] || '',
+
+          'Especialidad 2':
+            especialidadLabel(d['900_25_HLC_Skills']),
+
+          'Subespecialidad 2':
+            d['900_28_HLC_Skills'] || '',
+
+          'Especialidad 3':
+            especialidadLabel(d['900_26_HLC_Skills']),
+
+          'Subespecialidad 3':
+            d['900_29_HLC_Skills'] || '',
+
+          'Estado del médico (Activo/Inactivo)':
+            r.estado || '',
+
+          'Tipo de colaboración (Consultor/Colaborador/No)':
+            r.tipo_colaboracion || '',
+
+          'Comentarios':
+            d['900_8_Text_MultiLine_SanSerif'] || ''
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(
+        filas,
+        { header: EXCEL_COLUMNAS }
+      );
+
+      const wb = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(
+        wb,
+        ws,
+        'Médicos colaboradores'
+      );
+
+      XLSX.writeFile(
+        wb,
+        'medicos_colaboradores.xlsx'
+      );
+
+      statusEl.textContent =
+        `Se exportaron ${filas.length} registro(s).`;
+    });
+
+  /* =========================================================
+     IMPORTAR EXCEL
+     ========================================================= */
+
+  document.getElementById('btn-importar-excel-medicos')
+    .addEventListener('click', () => {
+      document
+        .getElementById('input-importar-excel-medicos')
+        .click();
+    });
+
+  document.getElementById('input-importar-excel-medicos')
+    .addEventListener('change', async e => {
+
+      const file = e.target.files[0];
+
+      e.target.value = '';
+
+      if (!file) return;
+
+      const statusEl =
+        document.getElementById('excel-status-medicos');
+
+      statusEl.textContent =
+        'Leyendo archivo...';
+
+      try {
+        const buf = await file.arrayBuffer();
+
+        const wb = XLSX.read(buf, {
+          type: 'array'
+        });
+
+        const hoja =
+          wb.Sheets[wb.SheetNames[0]];
+
+        const filas =
+          XLSX.utils.sheet_to_json(
+            hoja,
+            { defval: '' }
+          );
+
+        if (!filas.length) {
+          statusEl.textContent =
+            'El Excel no tiene filas para importar.';
+          return;
+        }
+
+        const filasValidas = filas.filter(f =>
+          String(f['Apellido'] || '').trim() ||
+          String(f['Nombre'] || '').trim()
+        );
+
+        if (!filasValidas.length) {
+          statusEl.textContent =
+            'Ninguna fila tiene Apellido o Nombre cargado.';
+          return;
+        }
+
+        const {
+          data: zonasActivas,
+          error: errorZonas
+        } = await sb.from('zonas')
+          .select('nombre')
+          .eq('activa', true);
+
+        if (errorZonas) {
+          statusEl.textContent =
+            'No se pudieron cargar las zonas: ' +
+            errorZonas.message;
+          return;
+        }
+
+        const zonasSet = new Set(
+          (zonasActivas || []).map(
+            z => String(z.nombre || '')
+              .trim()
+              .toLowerCase()
+          )
+        );
+
+        const {
+          data: especialidadesActivas,
+          error: errorEsp
+        } = await sb.from('especialidades')
+          .select('id,nombre')
+          .eq('activa', true);
+
+        if (errorEsp) {
+          statusEl.textContent =
+            'No se pudieron cargar las especialidades: ' +
+            errorEsp.message;
+          return;
+        }
+
+        const especialidadesPorNombre =
+          new Map(
+            (especialidadesActivas || []).map(
+              e => [
+                String(e.nombre || '')
+                  .trim()
+                  .toLowerCase(),
+                String(e.id)
+              ]
+            )
+          );
+
+        const errores = [];
+
+        filasValidas.forEach((fila, idx) => {
+
+          const zona =
+            String(fila['Zona'] || '').trim();
+
+          if (!zona) {
+            errores.push(
+              `Fila ${idx + 2}: falta Zona.`
+            );
+          } else if (
+            !zonasSet.has(zona.toLowerCase())
+          ) {
+            errores.push(
+              `Fila ${idx + 2}: la Zona "${zona}" no existe o está inactiva.`
+            );
+          }
+
+          const estado =
+            String(
+              fila[
+                'Estado del médico (Activo/Inactivo)'
+              ] || ''
+            )
+            .trim()
+            .toLowerCase();
+
+          const tipo =
+            String(
+              fila[
+                'Tipo de colaboración (Consultor/Colaborador/No)'
+              ] || ''
+            )
+            .trim()
+            .toLowerCase();
+
+          if (!['activo','inactivo'].includes(estado)) {
+            errores.push(
+              `Fila ${idx + 2}: Estado del médico debe ser Activo o Inactivo.`
+            );
+          }
+
+          if (!['consultor','colaborador','no'].includes(tipo)) {
+            errores.push(
+              `Fila ${idx + 2}: Tipo de colaboración debe ser Consultor, Colaborador o No.`
+            );
+          }
+        });
+
+        if (errores.length) {
+          statusEl.textContent =
+            `Importación detenida: ${errores.length} error(es). No se creó ningún registro.`;
+
+          alert(
+            'Corregí el Excel antes de importar:\n\n' +
+            errores.slice(0, 15).join('\n') +
+            (
+              errores.length > 15
+                ? `\n... y ${errores.length - 15} error(es) más.`
+                : ''
+            )
+          );
+
+          return;
+        }
+
+        const confirmado = confirm(
+          `Vas a importar ${filasValidas.length} fila(s). Cada una va a crear un registro NUEVO de Médico colaborador — no se va a modificar ni borrar ningún dato existente. ¿Confirmás la importación?`
+        );
+
+        if (!confirmado) {
+          statusEl.textContent =
+            'Importación cancelada.';
+          return;
+        }
+
+        const {
+          data: { user }
+        } = await sb.auth.getUser();
+
+        if (!user) {
+          statusEl.textContent =
+            'La sesión expiró. Volvé a iniciar sesión.';
+          return;
+        }
+
+        const {
+          data: existentes,
+          error: errorExistentes
+        } = await sb.from('registros_hlc31')
+          .select('id, datos');
+
+        if (errorExistentes) {
+          statusEl.textContent =
+            'No se pudo verificar la carga existente: ' +
+            errorExistentes.message;
+          return;
+        }
+
+        const normalizarClave = valor =>
+          String(valor || '')
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+
+        const claveMedico = fila => [
+          fila['Apellido'],
+          fila['Nombre'],
+          fila['Localidad'],
+          fila['Hospital / Sector (CEH)']
+        ]
+        .map(normalizarClave)
+        .join('|');
+
+        const clavesExistentes =
+          new Set(
+            (existentes || []).map(r => {
+              const d = r.datos || {};
+
+              return [
+                d['900_11_Text_SanSerif'],
+                d['900_10_Text_SanSerif'],
+                d['900_19_Text_SanSerif'],
+                d['hospital_sector_ceh']
+              ]
+              .map(normalizarClave)
+              .join('|');
+            })
+          );
+
+        let creados = 0;
+        let yaExistian = 0;
+        let saltadas =
+          filas.length - filasValidas.length;
+
+        for (const fila of filasValidas) {
+
+          const clave = claveMedico(fila);
+
+          if (clavesExistentes.has(clave)) {
+            yaExistian++;
+            continue;
+          }
+
+          const apellido =
+            String(fila['Apellido'] || '').trim();
+
+          const nombre =
+            String(fila['Nombre'] || '').trim();
+
+          const estadoVal =
+            String(
+              fila[
+                'Estado del médico (Activo/Inactivo)'
+              ] || ''
+            ).trim();
+
+          const tipoVal =
+            String(
+              fila[
+                'Tipo de colaboración (Consultor/Colaborador/No)'
+              ] || ''
+            ).trim();
+
+          const estadoNorm =
+            estadoVal.toLowerCase();
+
+          const tipoNorm =
+            tipoVal.toLowerCase();
+
+          const estado =
+            estadoNorm === 'activo'
+              ? 'Activo'
+              : estadoNorm === 'inactivo'
+                ? 'Inactivo'
+                : '';
+
+          const tipo_colaboracion =
+            tipoNorm === 'consultor'
+              ? 'Consultor'
+              : tipoNorm === 'colaborador'
+                ? 'Colaborador'
+                : tipoNorm === 'no'
+                  ? 'No'
+                  : '';
+
+          const datos = {
+
+            '900_10_Text_SanSerif':
+              nombre,
+
+            '900_11_Text_SanSerif':
+              apellido,
+
+            '900_12_Text_SanSerif':
+              String(
+                fila['Teléfono fijo'] || ''
+              ).trim(),
+
+            '900_13_Text_SanSerif':
+              String(
+                fila['Teléfono móvil'] || ''
+              ).trim(),
+
+            '900_19_Text_SanSerif':
+              String(
+                fila['Localidad'] || ''
+              ).trim(),
+
+            '900_20_Text_SanSerif':
+              String(
+                fila['Provincia o estado'] || ''
+              ).trim(),
+
+            'sector_zona_ceh':
+              String(
+                fila['Zona'] || ''
+              ).trim(),
+
+            'hospital_sector_ceh':
+              String(
+                fila['Hospital / Sector (CEH)'] || ''
+              ).trim(),
+
+            '900_24_HLC_Skills':
+              valorEspecialidadDesdeTexto(
+                fila['Especialidad 1']
+              ),
+
+            '900_27_HLC_Skills':
+              String(
+                fila['Subespecialidad 1'] || ''
+              ).trim(),
+
+            '900_25_HLC_Skills':
+              valorEspecialidadDesdeTexto(
+                fila['Especialidad 2']
+              ),
+
+            '900_28_HLC_Skills':
+              String(
+                fila['Subespecialidad 2'] || ''
+              ).trim(),
+
+            '900_26_HLC_Skills':
+              valorEspecialidadDesdeTexto(
+                fila['Especialidad 3']
+              ),
+
+            '900_29_HLC_Skills':
+              String(
+                fila['Subespecialidad 3'] || ''
+              ).trim(),
+
+            '900_8_Text_MultiLine_SanSerif':
+              String(
+                fila['Comentarios'] || ''
+              ).trim()
+          };
+
+          const { error } =
+            await sb.from('registros_hlc31')
+              .insert({
+                autor_id: user.id,
+                datos,
+                estado,
+                tipo_colaboracion,
+                nombre_original:
+                  [nombre, apellido]
+                    .filter(Boolean)
+                    .join(' ')
+              });
+
+          if (error) {
+            saltadas++;
+
+            console.error(
+              'No se pudo importar',
+              {
+                apellido,
+                nombre,
+                error
+              }
+            );
+          } else {
+            creados++;
+
+            clavesExistentes.add(clave);
+          }
+        }
+
+        statusEl.textContent =
+          `Carga terminada: ${creados} registro(s) nuevo(s) agregado(s), ${yaExistian} ya estaban cargados${saltadas ? `, ${saltadas} fila(s) no se pudieron importar` : ''}.`;
+
+        alert(
+          `Carga terminada.\n\n` +
+          `Nuevos agregados: ${creados}\n` +
+          `Ya estaban cargados: ${yaExistian}\n` +
+          `No importados: ${saltadas}`
+        );
+
+      } catch (err) {
+
+        statusEl.textContent =
+          'No se pudo leer el Excel: ' +
+          err.message;
+      }
+    });
+
+  /* =========================================================
+     APROBACIÓN DE USUARIOS
+     ========================================================= */
+
+  main.querySelectorAll(
+    'button[data-action="abrir-acciones"]'
+  ).forEach(btn => {
+    btn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const wrap = btn.closest('.persona-actions');
+      main.querySelectorAll('.persona-actions.open').forEach(other => {
+        if (other !== wrap) other.classList.remove('open');
+      });
+      wrap?.classList.toggle('open');
+    });
+  });
+
+  main.querySelectorAll(
+    'button[data-action="aprobar"]'
+  ).forEach(btn => {
+
+    btn.addEventListener('click', async () => {
+
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      const { error } =
+        await sb.from('profiles')
+          .update({ aprobado: true })
+          .eq('id', btn.dataset.id);
+
+      if (error) {
+        alert('Error: ' + error.message);
+      }
+
+      cargar();
+    });
+  });
+
+  main.querySelectorAll(
+    'button[data-action="proponer-hacer-admin"]'
+  ).forEach(btn => {
+
+    btn.addEventListener('click', () =>
+      proponerAccion(
+        'hacer_admin',
+        btn.dataset.id,
+        btn.dataset.email
+      )
+    );
+  });
+
+  main.querySelectorAll(
+    'button[data-action="proponer-quitar-admin"]'
+  ).forEach(btn => {
+
+    btn.addEventListener('click', () =>
+      proponerAccion(
+        'quitar_admin',
+        btn.dataset.id,
+        btn.dataset.email
+      )
+    );
+  });
+
+  main.querySelectorAll(
+    'button[data-action="proponer-desvincular"]'
+  ).forEach(btn => {
+
+    btn.addEventListener('click', () => {
+
+      if (!confirm(
+        '¿Solicitar restringir el acceso de esta persona?'
+      )) return;
+
+      proponerAccion(
+        'restringir_acceso',
+        btn.dataset.id,
+        btn.dataset.email
+      );
+    });
+  });
+
+  main.querySelectorAll(
+    'button[data-action="proponer-reactivar-acceso"]'
+  ).forEach(btn => {
+
+    btn.addEventListener('click', () => {
+
+      if (!confirm(
+        '¿Solicitar la reactivación del acceso de esta persona?'
+      )) return;
+
+      proponerAccion(
+        'reactivar_acceso',
+        btn.dataset.id,
+        btn.dataset.email
+      );
+    });
+  });
+
+  main.querySelectorAll(
+    'button[data-action="confirmar-solicitud"]'
+  ).forEach(btn => {
+
+    btn.addEventListener('click', () =>
+      confirmarSolicitud(btn.dataset.id)
+    );
+  });
+
+  main.querySelectorAll(
+    'button[data-action="cancelar-solicitud"]'
+  ).forEach(btn => {
+
+    btn.addEventListener('click', () =>
+      cancelarSolicitud(btn.dataset.id)
+    );
+  });
+
+  main.querySelectorAll(
+    'button[data-action="rechazar-solicitud"]'
+  ).forEach(btn => {
+
+    btn.addEventListener('click', () =>
+      rechazarSolicitud(btn.dataset.id)
+    );
+  });
+}
+
+document.addEventListener('click', ev => {
+  if (!ev.target.closest('.persona-actions')) {
+    document.querySelectorAll('.persona-actions.open')
+      .forEach(el => el.classList.remove('open'));
+  }
+});
+
+/* =========================================================
+   ADMINISTRACIÓN DE USUARIOS
+   ========================================================= */
+
+async function aplicarAccion(tipo, objetivoId) {
+
+  if (tipo === 'hacer_admin') {
+    return sb.from('profiles')
+      .update({ es_admin: true })
+      .eq('id', objetivoId);
+  }
+
+  if (tipo === 'quitar_admin') {
+    return sb.from('profiles')
+      .update({ es_admin: false })
+      .eq('id', objetivoId);
+  }
+
+  if (
+    tipo === 'desvincular' ||
+    tipo === 'restringir_acceso'
+  ) {
+    return sb.from('profiles')
+      .update({
+        bloqueado: true,
+        aprobado: false
+      })
+      .eq('id', objetivoId);
+  }
+
+  if (tipo === 'reactivar_acceso') {
+    return sb.from('profiles')
+      .update({
+        bloqueado: false,
+        aprobado: true
+      })
+      .eq('id', objetivoId);
+  }
+}
+
+async function proponerAccion(
+  tipo,
+  objetivoId,
+  objetivoEmail
+) {
+  // Si ya existe una propuesta pendiente para este usuario, no creamos otra.
+  // Si la propuesta fue hecha por otro administrador, este clic significa
+  // justamente que el administrador actual quiere confirmar esa propuesta.
+  const tiposCompatibles =
+    (tipo === 'restringir_acceso' || tipo === 'desvincular')
+      ? ['desvincular', 'restringir_acceso']
+      : ['reactivar_acceso'];
+
+  const { data: existente } = await sb.from('solicitudes_admin')
+    .select('*')
+    .in('tipo', tiposCompatibles)
+    .eq('objetivo_id', objetivoId)
+    .eq('estado', 'pendiente')
+    .maybeSingle();
+
+  if (existente) {
+    const confirmaciones = existente.confirmaciones || [];
+
+    // El administrador que ya confirmó no debe volver a confirmar ni generar otra solicitud.
+    if (confirmaciones.includes(miId)) {
+      alert('Ya confirmaste esta solicitud. Está pendiente de la confirmación de los demás administradores.');
+      cargar();
+      return;
+    }
+
+    // Si la propuso otro administrador, este botón funciona como confirmación.
+    await confirmarSolicitud(existente.id);
+    return;
+  }
+
+  // Verificaciones de estado antes de crear la solicitud.
+  const { data: objetivo } = await sb.from('profiles')
+    .select('id, aprobado, bloqueado')
+    .eq('id', objetivoId)
+    .single();
+
+  if (!objetivo) {
+    alert('No se encontró el usuario.');
+    return;
+  }
+
+  if (
+    (tipo === 'restringir_acceso' || tipo === 'desvincular') &&
+    objetivo.bloqueado
+  ) {
+    alert('Este usuario ya tiene el acceso restringido.');
+    cargar();
+    return;
+  }
+
+  if (
+    tipo === 'reactivar_acceso' &&
+    !objetivo.bloqueado
+  ) {
+    alert('Este usuario no tiene el acceso restringido.');
+    cargar();
+    return;
+  }
+
+  const { data: admins } =
+    await sb.from('profiles')
+      .select('id')
+      .eq('es_admin', true);
+
+  const totalAdmins =
+    (admins || []).length;
+
+  if (totalAdmins <= 1) {
+
+    const { error } =
+      await aplicarAccion(
+        tipo,
+        objetivoId
+      );
+
+    if (error) {
+      alert(
+        'Error: ' +
+        error.message
+      );
+    }
+
+    cargar();
+    return;
+  }
+
+  const { error } =
+    await sb.from('solicitudes_admin')
+      .insert({
+        tipo,
+        objetivo_id: objetivoId,
+        objetivo_email: objetivoEmail,
+        propuesto_por: miId,
+        confirmaciones: [miId],
+        estado: 'pendiente'
+      });
+
+  if (error) {
+    alert(
+      'Error: ' +
+      error.message
+    );
+  }
+
+  cargar();
+}
+
+async function confirmarSolicitud(id) {
+
+  const {
+    data: s,
+    error: errLeer
+  } = await sb.from('solicitudes_admin')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (errLeer || !s) {
+    alert(
+      'No se pudo leer la propuesta.'
+    );
+    return;
+  }
+
+  if (
+    (s.confirmaciones || [])
+      .includes(miId)
+  ) {
+    return;
+  }
+
+  const nuevasConf = [
+    ...(s.confirmaciones || []),
+    miId
+  ];
+
+  const { data: admins } =
+    await sb.from('profiles')
+      .select('id')
+      .eq('es_admin', true);
+
+  const totalAdmins =
+    (admins || []).length;
+
+  if (nuevasConf.length >= totalAdmins) {
+
+    const {
+      error: errAplicar
+    } = await aplicarAccion(
+      s.tipo,
+      s.objetivo_id
+    );
+
+    if (errAplicar) {
+      alert(
+        'Error al aplicar el cambio: ' +
+        errAplicar.message
+      );
+      return;
+    }
+
+    await sb.from('solicitudes_admin')
+      .update({
+        confirmaciones: nuevasConf,
+        estado: 'aprobada',
+        resuelto_at:
+          new Date().toISOString()
+      })
+      .eq('id', id);
+
+  } else {
+
+    await sb.from('solicitudes_admin')
+      .update({
+        confirmaciones: nuevasConf
+      })
+      .eq('id', id);
+  }
+
+  cargar();
+}
+
+async function cancelarSolicitud(id) {
+
+  const { data: s, error: errLeer } = await sb.from('solicitudes_admin')
+    .select('id, tipo, propuesto_por, estado')
+    .eq('id', id)
+    .single();
+
+  if (errLeer || !s) {
+    alert('No se pudo leer la propuesta.');
+    return;
+  }
+
+  if (s.propuesto_por !== miId) {
+    alert('Solo puede cancelar esta propuesta el administrador que la creó.');
+    return;
+  }
+
+  if (s.estado !== 'pendiente') {
+    cargar();
+    return;
+  }
+
+  if (s.tipo !== 'restringir_acceso' && s.tipo !== 'desvincular') {
+    return;
+  }
+
+  if (!confirm('¿Cancelar el bloqueo propuesto? El usuario seguirá con su acceso sin cambios.')) {
+    return;
+  }
+
+  const { error } = await sb.from('solicitudes_admin')
+    .update({
+      estado: 'cancelada',
+      resuelto_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .eq('propuesto_por', miId)
+    .eq('estado', 'pendiente');
+
+  if (error) {
+    alert('No se pudo cancelar la propuesta: ' + error.message);
+    return;
+  }
+
+  cargar();
+}
+
+async function rechazarSolicitud(id) {
+
+  if (!confirm(
+    '¿Rechazar esta propuesta? El acceso de la persona no cambiará.'
+  )) {
+    return;
+  }
+
+  await sb.from('solicitudes_admin')
+    .update({
+      estado: 'rechazada',
+      resuelto_at:
+        new Date().toISOString()
+    })
+    .eq('id', id);
+
+  cargar();
+}
+
+cargar();
+</script>
+</body>
+</html>

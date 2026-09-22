@@ -11,6 +11,9 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Hoja de trabajo para emergencias médicas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
 <style>
   :root {
     --paper: #f6f4ef; --ink: #1f2a24; --line: #c9c2b3;
@@ -19,11 +22,18 @@
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Iowan Old Style', 'Georgia', serif; padding-bottom: 100px; }
   header { padding: 28px 20px 18px; border-bottom: 2px solid var(--ink); }
+  .back-link { display: inline-block; margin-bottom: 10px; font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
+  .back-link:active { opacity: 0.7; }
   header .kicker { font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
   header h1 { margin: 6px 0 4px; font-size: 22px; line-height: 1.25; }
   header p { margin: 0; font-size: 13px; color: #5a5347; font-family: -apple-system, sans-serif; }
   .warn { margin: 14px 16px 0; max-width: 688px; background: #f6e9df; border: 1px solid #d8b79c; border-radius: 4px; padding: 10px 12px; font-family: -apple-system, sans-serif; font-size: 12.5px; color: var(--danger); }
   main { max-width: 720px; margin: 0 auto; padding: 18px 16px; }
+
+  @media (min-width: 860px) {
+    main { max-width: 980px; padding: 28px 24px; }
+    header { padding: 36px 24px 20px; }
+  }
   .section { background: #fffdf9; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 12px; }
   .section summary { list-style: none; cursor: pointer; padding: 14px 16px; font-family: -apple-system, sans-serif; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; }
   .section summary::-webkit-details-marker { display: none; }
@@ -41,6 +51,7 @@
   .datetime-pair input { font-family: -apple-system, sans-serif; font-size: 14px; padding: 9px 8px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: var(--ink); }
   .fld span { font-size: 12.5px; color: #5a5347; }
   .fld input, .fld textarea, .fld select { font-family: -apple-system, sans-serif; font-size: 15px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: var(--ink); }
+  .fld textarea { width: 100%; min-height: 42px; height: 42px; overflow-y: hidden; resize: none; line-height: 1.35; }
   .fld input:focus, .fld textarea:focus, .fld select:focus { outline: none; border-color: var(--accent); }
   .chk { display: flex; align-items: center; gap: 8px; font-family: -apple-system, sans-serif; font-size: 14px; }
   .chk input { width: 17px; height: 17px; accent-color: var(--accent); }
@@ -49,11 +60,19 @@
   .phone-row input { flex: 1; }
   .wa-btn {
     flex-shrink: 0; width: 42px; height: 42px; padding: 0;
-    border: none; border-radius: 50%; background: #25D366; cursor: pointer;
+    border: none; border-radius: 13px 13px 13px 3px; background: #25D366; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.15);
     display: flex; align-items: center; justify-content: center;
   }
   .wa-btn svg { width: 20px; height: 20px; fill: #fff; }
   .wa-btn:active { background: #1ea952; }
+  .contact-pair { display: flex; gap: 10px; flex-wrap: wrap; grid-column: 1 / -1; }
+  .contact-pair .fld { flex: 1; min-width: 140px; }
+  .contact-input-row { display: flex; gap: 6px; }
+  .contact-input-row input { flex: 1; }
+  .contact-action-btn {
+    flex-shrink: 0; width: 42px; font-size: 18px; padding: 0;
+    border: 1px solid var(--line); border-radius: 3px; background: #fff; cursor: pointer;
+  }
   .actions { position: sticky; bottom: 0; background: var(--paper); border-top: 2px solid var(--ink); padding: 14px 16px; display: flex; gap: 10px; max-width: 720px; margin: 0 auto; }
   button { font-family: -apple-system, sans-serif; font-weight: 600; font-size: 15px; padding: 13px 16px; border-radius: 4px; border: none; cursor: pointer; flex: 1; }
   #generar { background: var(--accent); color: #fff; }
@@ -66,11 +85,80 @@
   .fld.prefilled span::after { content: " · ya cargado"; color: var(--accent); font-weight: 600; }
   .chk.prefilled { background: #eef5f0; border-radius: 3px; padding: 4px 6px; margin: -4px -6px; }
   #status { max-width: 720px; margin: 0 auto; padding: 0 16px; font-family: -apple-system, sans-serif; font-size: 13px; color: var(--danger); }
+  #recordatorios { max-width: 720px; margin: 8px auto 0; padding: 0 16px; display: grid; gap: 8px; }
+  .recordatorio { background: var(--accent-soft); color: var(--accent); border-radius: 4px; padding: 10px 12px; font-family: -apple-system, sans-serif; font-size: 12.5px; line-height: 1.5; }
+  .recordatorio a { color: var(--accent); font-weight: 600; }
+
+
+  .filename-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 110;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .filename-modal-overlay.open { display: flex; }
+  .filename-modal {
+    background: #fffdf9; border-radius: 8px; max-width: 420px; width: 100%;
+    padding: 20px; font-family: -apple-system, sans-serif; color: #1f2a24;
+  }
+  .filename-modal h3 { margin: 0 0 4px; font-family: 'Iowan Old Style', Georgia, serif; font-size: 17px; }
+  .filename-modal p.hint { margin: 0 0 12px; font-size: 12px; color: #5a5347; }
+  .filename-input {
+    width: 100%; padding: 10px; border: 1px solid #c9c2b3; border-radius: 4px;
+    font-family: -apple-system, sans-serif; font-size: 15px; box-sizing: border-box;
+  }
+  .filename-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .filename-modal-actions button {
+    flex: 1; padding: 11px; border-radius: 4px; border: none; font-weight: 600;
+    font-family: -apple-system, sans-serif; font-size: 14px; cursor: pointer;
+  }
+  .filename-btn-secondary { background: #e4ece8; color: #2f5d50; }
+  .filename-btn-primary { background: #2f5d50; color: #fff; }
+
+/* FormAPP: acceso protegido */
+#auth-gate {
+  position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center;
+  background: #f3f8fc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+#auth-gate .auth-box {
+  width: min(420px, calc(100% - 32px)); background: #fff; border: 1px solid #dbe8f1;
+  border-radius: 18px; padding: 28px; text-align: center; box-shadow: 0 18px 45px rgba(25,76,111,.10);
+}
+#auth-gate .auth-spinner {
+  width: 34px; height: 34px; margin: 0 auto 14px; border: 4px solid #dcebf5; border-top-color: #1769aa;
+  border-radius: 50%; animation: formapp-spin .8s linear infinite;
+}
+#auth-gate strong { display:block; color:#123d63; font-size:17px; margin-bottom:6px; }
+#auth-gate span { color:#6b8192; font-size:13px; line-height:1.5; }
+@keyframes formapp-spin { to { transform: rotate(360deg); } }
+html.auth-checking body > *:not(#auth-gate) { visibility: hidden; }
 </style>
 </head>
 <body>
+<div id="auth-gate" aria-live="polite">
+  <div class="auth-box">
+    <div class="auth-spinner" aria-hidden="true"></div>
+    <strong>Verificando acceso</strong>
+    <span>Un momento. FormAPP está comprobando tu sesión.</span>
+  </div>
+</div>
+
+
+<div id="filename-modal-overlay" class="filename-modal-overlay">
+  <div class="filename-modal">
+    <h3>Nombre del archivo</h3>
+    <p class="hint">Revisá o corregí el nombre antes de continuar (se agrega .pdf solo).</p>
+    <input type="text" id="filename-input" class="filename-input" autocomplete="off">
+    <div class="filename-modal-actions">
+      <button id="filename-cancel" class="filename-btn-secondary" type="button">Cancelar</button>
+      <button id="filename-confirm" class="filename-btn-primary" type="button">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+
+
 
 <header>
+  <a href="menu.html" id="back-link" class="back-link">‹ Volver al expediente</a>
   <div class="kicker">Prototipo · Comité de Enlace con los Hospitales</div>
   <h1>Hoja de trabajo para emergencias médicas</h1>
   <p>hlc-07-S — Completá los datos y generá el PDF con el mismo diseño del original.</p>
@@ -180,13 +268,17 @@
         <div class="note">Médico a cargo</div>
 <label class="fld"><span>Nombre y apellido</span><input type="text" autocomplete="off" data-field="Text40" data-type="text"></label>
 <label class="fld"><span>Especialidad</span><select autocomplete="off" data-field="Text41" data-type="select"><option value=""></option><option value="Anestesiología">Anestesiología</option><option value="Tratamiento de quemaduras">Tratamiento de quemaduras</option><option value="Cirugía cardiotorácica">Cirugía cardiotorácica</option><option value="Cirugía colorrectal (proctología)">Cirugía colorrectal (proctología)</option><option value="Medicina intensiva">Medicina intensiva</option><option value="Medicina de urgencias">Medicina de urgencias</option><option value="Gastroenterología">Gastroenterología</option><option value="Cirugía general">Cirugía general</option><option value="Oncología ginecológica">Oncología ginecológica</option><option value="Ginecología">Ginecología</option><option value="Hematología">Hematología</option><option value="Embarazos de alto riesgo (perinatología)">Embarazos de alto riesgo (perinatología)</option><option value="Hospitalista">Hospitalista</option><option value="Radiología intervencionista">Radiología intervencionista</option><option value="Neonatología">Neonatología</option><option value="Nefrología">Nefrología</option><option value="Neurocirugía">Neurocirugía</option><option value="Obstetricia">Obstetricia</option><option value="Oncología">Oncología</option><option value="Cirugía bucal y maxilofacial">Cirugía bucal y maxilofacial</option><option value="Cirugía ortopédica">Cirugía ortopédica</option><option value="Otra">Otra</option><option value="Otorrinolaringología">Otorrinolaringología</option><option value="Anestesiología pediátrica">Anestesiología pediátrica</option><option value="Cirugía cardiotorácica pediátrica">Cirugía cardiotorácica pediátrica</option><option value="Cirugía general pediátrica">Cirugía general pediátrica</option><option value="Oncología/Hematología pediátrica">Oncología/Hematología pediátrica</option><option value="Neurocirugía pediátrica">Neurocirugía pediátrica</option><option value="Cirugía ortopédica pediátrica">Cirugía ortopédica pediátrica</option><option value="Neumología">Neumología</option><option value="Trasplante de corazón">Trasplante de corazón</option><option value="Trasplante de riñón">Trasplante de riñón</option><option value="Trasplante de hígado">Trasplante de hígado</option><option value="Trasplante de pulmón">Trasplante de pulmón</option><option value="Traumatología">Traumatología</option><option value="Urología">Urología</option><option value="Cirugía vascular">Cirugía vascular</option></select></label>
+<div class="contact-pair">
 <label class="fld"><span>Método de contacto</span><select autocomplete="off" data-field="Text42" data-type="select"><option value=""></option><option value="E-mail">E-mail</option><option value="Casa">Casa</option><option value="Celular">Celular</option><option value="Oficina">Oficina</option><option value="Localizador">Localizador</option><option value="Otro">Otro</option></select></label>
-<label class="fld"><span>Dato de contacto</span><input type="text" autocomplete="off" data-field="Text43" data-type="text"></label>
+<label class="fld"><span>Dato de contacto</span><div class="contact-input-row"><input type="text" autocomplete="off" data-field="Text43" data-type="text"><button type="button" class="contact-action-btn" title="Contactar">↗</button></div></label>
+</div>
 <div class="note">Otro médico</div>
 <label class="fld"><span>Nombre y apellido</span><input type="text" autocomplete="off" data-field="Text44" data-type="text"></label>
 <label class="fld"><span>Especialidad</span><select autocomplete="off" data-field="Text45" data-type="select"><option value=""></option><option value="Anestesiología">Anestesiología</option><option value="Tratamiento de quemaduras">Tratamiento de quemaduras</option><option value="Cirugía cardiotorácica">Cirugía cardiotorácica</option><option value="Cirugía colorrectal (proctología)">Cirugía colorrectal (proctología)</option><option value="Medicina intensiva">Medicina intensiva</option><option value="Medicina de urgencias">Medicina de urgencias</option><option value="Gastroenterología">Gastroenterología</option><option value="Cirugía general">Cirugía general</option><option value="Oncología ginecológica">Oncología ginecológica</option><option value="Ginecología">Ginecología</option><option value="Hematología">Hematología</option><option value="Embarazos de alto riesgo (perinatología)">Embarazos de alto riesgo (perinatología)</option><option value="Hospitalista">Hospitalista</option><option value="Radiología intervencionista">Radiología intervencionista</option><option value="Neonatología">Neonatología</option><option value="Nefrología">Nefrología</option><option value="Neurocirugía">Neurocirugía</option><option value="Obstetricia">Obstetricia</option><option value="Oncología">Oncología</option><option value="Cirugía bucal y maxilofacial">Cirugía bucal y maxilofacial</option><option value="Cirugía ortopédica">Cirugía ortopédica</option><option value="Otra">Otra</option><option value="Otorrinolaringología">Otorrinolaringología</option><option value="Anestesiología pediátrica">Anestesiología pediátrica</option><option value="Cirugía cardiotorácica pediátrica">Cirugía cardiotorácica pediátrica</option><option value="Cirugía general pediátrica">Cirugía general pediátrica</option><option value="Oncología/Hematología pediátrica">Oncología/Hematología pediátrica</option><option value="Neurocirugía pediátrica">Neurocirugía pediátrica</option><option value="Cirugía ortopédica pediátrica">Cirugía ortopédica pediátrica</option><option value="Neumología">Neumología</option><option value="Trasplante de corazón">Trasplante de corazón</option><option value="Trasplante de riñón">Trasplante de riñón</option><option value="Trasplante de hígado">Trasplante de hígado</option><option value="Trasplante de pulmón">Trasplante de pulmón</option><option value="Traumatología">Traumatología</option><option value="Urología">Urología</option><option value="Cirugía vascular">Cirugía vascular</option></select></label>
+<div class="contact-pair">
 <label class="fld"><span>Método de contacto</span><select autocomplete="off" data-field="Text46" data-type="select"><option value=""></option><option value="E-mail">E-mail</option><option value="Casa">Casa</option><option value="Celular">Celular</option><option value="Oficina">Oficina</option><option value="Localizador">Localizador</option><option value="Otro">Otro</option></select></label>
-<label class="fld"><span>Dato de contacto</span><input type="text" autocomplete="off" data-field="Text47" data-type="text"></label>
+<label class="fld"><span>Dato de contacto</span><div class="contact-input-row"><input type="text" autocomplete="off" data-field="Text47" data-type="text"><button type="button" class="contact-action-btn" title="Contactar">↗</button></div></label>
+</div>
       </div>
     </details>
     
@@ -224,12 +316,18 @@
         <label class="fld"><span>Nombre del médico a consultar</span><input type="text" autocomplete="off" data-field="Text51" data-type="text"></label>
 <label class="fld"><span>Especialidad</span><select autocomplete="off" data-field="Text52" data-type="select"><option value=""></option><option value="Anestesiología">Anestesiología</option><option value="Tratamiento de quemaduras">Tratamiento de quemaduras</option><option value="Cirugía cardiotorácica">Cirugía cardiotorácica</option><option value="Cirugía colorrectal (proctología)">Cirugía colorrectal (proctología)</option><option value="Medicina intensiva">Medicina intensiva</option><option value="Medicina de urgencias">Medicina de urgencias</option><option value="Gastroenterología">Gastroenterología</option><option value="Cirugía general">Cirugía general</option><option value="Oncología ginecológica">Oncología ginecológica</option><option value="Ginecología">Ginecología</option><option value="Hematología">Hematología</option><option value="Embarazos de alto riesgo (perinatología)">Embarazos de alto riesgo (perinatología)</option><option value="Hospitalista">Hospitalista</option><option value="Radiología intervencionista">Radiología intervencionista</option><option value="Neonatología">Neonatología</option><option value="Nefrología">Nefrología</option><option value="Neurocirugía">Neurocirugía</option><option value="Obstetricia">Obstetricia</option><option value="Oncología">Oncología</option><option value="Cirugía bucal y maxilofacial">Cirugía bucal y maxilofacial</option><option value="Cirugía ortopédica">Cirugía ortopédica</option><option value="Otra">Otra</option><option value="Otorrinolaringología">Otorrinolaringología</option><option value="Anestesiología pediátrica">Anestesiología pediátrica</option><option value="Cirugía cardiotorácica pediátrica">Cirugía cardiotorácica pediátrica</option><option value="Cirugía general pediátrica">Cirugía general pediátrica</option><option value="Oncología/Hematología pediátrica">Oncología/Hematología pediátrica</option><option value="Neurocirugía pediátrica">Neurocirugía pediátrica</option><option value="Cirugía ortopédica pediátrica">Cirugía ortopédica pediátrica</option><option value="Neumología">Neumología</option><option value="Trasplante de corazón">Trasplante de corazón</option><option value="Trasplante de riñón">Trasplante de riñón</option><option value="Trasplante de hígado">Trasplante de hígado</option><option value="Trasplante de pulmón">Trasplante de pulmón</option><option value="Traumatología">Traumatología</option><option value="Urología">Urología</option><option value="Cirugía vascular">Cirugía vascular</option></select></label>
 <label class="fld"><span>Información adicional</span><input type="text" autocomplete="off" data-field="Text53" data-type="text"></label>
+<div class="contact-pair">
 <label class="fld"><span>Método de contacto (1)</span><select autocomplete="off" data-field="Text54.0" data-type="select"><option value=""></option><option value="E-mail">E-mail</option><option value="Casa">Casa</option><option value="Celular">Celular</option><option value="Oficina">Oficina</option><option value="Localizador">Localizador</option><option value="Otro">Otro</option></select></label>
-<label class="fld"><span>Dato de contacto (1)</span><input type="text" autocomplete="off" data-field="Text55.0" data-type="text"></label>
+<label class="fld"><span>Dato de contacto (1)</span><div class="contact-input-row"><input type="text" autocomplete="off" data-field="Text55.0" data-type="text"><button type="button" class="contact-action-btn" title="Contactar">↗</button></div></label>
+</div>
+<div class="contact-pair">
 <label class="fld"><span>Método de contacto (2)</span><select autocomplete="off" data-field="Text54.1" data-type="select"><option value=""></option><option value="E-mail">E-mail</option><option value="Casa">Casa</option><option value="Celular">Celular</option><option value="Oficina">Oficina</option><option value="Localizador">Localizador</option><option value="Otro">Otro</option></select></label>
-<label class="fld"><span>Dato de contacto (2)</span><input type="text" autocomplete="off" data-field="Text55.1" data-type="text"></label>
+<label class="fld"><span>Dato de contacto (2)</span><div class="contact-input-row"><input type="text" autocomplete="off" data-field="Text55.1" data-type="text"><button type="button" class="contact-action-btn" title="Contactar">↗</button></div></label>
+</div>
+<div class="contact-pair">
 <label class="fld"><span>Método de contacto (3)</span><select autocomplete="off" data-field="Text54.2" data-type="select"><option value=""></option><option value="E-mail">E-mail</option><option value="Casa">Casa</option><option value="Celular">Celular</option><option value="Oficina">Oficina</option><option value="Localizador">Localizador</option><option value="Otro">Otro</option></select></label>
-<label class="fld"><span>Dato de contacto (3)</span><input type="text" autocomplete="off" data-field="Text55.2" data-type="text"></label>
+<label class="fld"><span>Dato de contacto (3)</span><div class="contact-input-row"><input type="text" autocomplete="off" data-field="Text55.2" data-type="text"><button type="button" class="contact-action-btn" title="Contactar">↗</button></div></label>
+</div>
       </div>
     </details>
     
@@ -258,6 +356,10 @@
 </main>
 
 <div id="status"></div>
+<div id="recordatorios"></div>
+<p style="text-align:center; font-family:-apple-system,sans-serif; font-size:12px; margin:6px 16px 0;">
+  <a href="instrucciones.html#whatsapp-preview" style="color:#2f5d50;">¿No ves los datos completos en la vista previa de WhatsApp?</a>
+</p>
 
 <div class="actions">
   <button id="generar">Generar PDF</button>
@@ -274,7 +376,205 @@ function b64ToBytes(b64) {
   return bytes;
 }
 let lastBlob = null;
+let lastFlatBlob = null;
+
+const CONFIG_KEY = 'hlc_config_v1';
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
 let lastFilename = "hlc-07-S-completado.pdf";
+// --- Sistema de expedientes/casos (Supabase) — también funciona como el único historial: ---
+// --- no se guarda ninguna copia paralela en este dispositivo (localStorage).            ---
+const SUPABASE_URL = "https://abchojqugeywrzqktgpm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2hvanF1Z2V5d3J6cWt0Z3BtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NjkyMTMsImV4cCI6MjEwMzI0NTIxM30.VjbcoWi-F3QwN5tTjmmO6mcMhZVdSI_6X7qdxoK694E";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* FormAPP — protección de acceso. Se verifica con el mismo cliente Supabase que usa el formulario. */
+(function () {
+  document.documentElement.classList.add('auth-checking');
+  const destino = location.pathname + location.search + location.hash;
+  const loginUrl = 'index.html?redirect=' + encodeURIComponent(destino);
+  async function verificarAcceso() {
+    try {
+      const { data, error } = await sb.auth.getSession();
+      if (error || !data || !data.session) {
+        location.replace(loginUrl);
+        return;
+      }
+      sb.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') location.replace(loginUrl);
+      });
+      document.documentElement.classList.remove('auth-checking');
+      document.getElementById('auth-gate')?.remove();
+    } catch (e) {
+      console.error('No se pudo verificar la sesión:', e);
+      location.replace(loginUrl);
+    }
+  }
+  verificarAcceso();
+})();
+const BUCKET_ADJUNTOS = 'casos-adjuntos';
+let casoId = new URLSearchParams(location.search).get('caso_id'); // puede completarse más tarde si venimos de "editar" sin caso_id en la URL
+let entradaSupabaseId = null; // entrada ya creada (recién, o cargada con ?editar=), para actualizarla en vez de duplicarla
+
+// Si el formulario se abrió desde un expediente, Volver debe regresar a ese expediente.
+// En edición también se conserva el caso_id para que la navegación no dependa del historial del navegador.
+(function configurarVolverPaginaAnterior() {
+  const back = document.getElementById('back-link');
+  if (back) {
+    back.href = 'javascript:history.back()';
+  }
+})();
+
+// Ajusta automáticamente la altura de los campos de texto largo al contenido.
+// No se usa scroll interno: el campo crece al escribir y se reduce al borrar.
+function ajustarAlturaTextarea(textarea) {
+  if (!textarea) return;
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.max(textarea.scrollHeight, 42) + 'px';
+}
+
+function ajustarTodosLosTextareas() {
+  document.querySelectorAll('textarea[data-type="text"]').forEach(ajustarAlturaTextarea);
+}
+
+document.querySelectorAll('textarea[data-type="text"]').forEach(textarea => {
+  textarea.addEventListener('input', () => ajustarAlturaTextarea(textarea));
+  ajustarAlturaTextarea(textarea);
+});
+
+// Junta los valores actuales del formulario en un objeto simple, para guardarlos como "datos" de la entrada.
+function recolectarDatosFormulario() {
+  const datos = {};
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const campo = el.dataset.field;
+    const type = el.dataset.type;
+    if (type === 'check' || type === 'check-fixed') {
+      datos[campo] = !!el.checked;
+    } else if (type === 'radio2' || type === 'radio2-text') {
+      const marcado = el.querySelector('input[data-radio-value]:checked');
+      datos[campo] = marcado ? marcado.dataset.radioValue : '';
+    } else if (type === 'datetime') {
+      const dateInput = el.querySelector('input[type=date]');
+      const timeInput = el.querySelector('input[type=time]');
+      datos[campo] = { fecha: dateInput ? dateInput.value : '', hora: timeInput ? timeInput.value : '' };
+    } else {
+      datos[campo] = el.value || '';
+    }
+  });
+  return datos;
+}
+
+// Inversa de recolectarDatosFormulario: precarga los campos en pantalla a partir de los "datos"
+// ya guardados en una entrada real de Supabase (se usa al editar con ?editar=ID).
+function precargarDatosFormulario(datos) {
+  let conDatos = 0;
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const campo = el.dataset.field;
+    const type = el.dataset.type;
+    if (!datos || !(campo in datos)) return;
+    const valor = datos[campo];
+    const wrapper = el.closest('.fld, .chk');
+    try {
+      if (type === 'check' || type === 'check-fixed') {
+        el.checked = !!valor;
+        if (valor) { conDatos++; if (wrapper) wrapper.classList.add('prefilled'); }
+      } else if (type === 'radio2' || type === 'radio2-text') {
+        el.querySelectorAll('input[data-radio-value]').forEach(cb => { cb.checked = (cb.dataset.radioValue === valor); });
+        if (valor) { conDatos++; const details = el.closest('details'); if (details) details.open = true; }
+      } else if (type === 'datetime') {
+        const dateInput = el.querySelector('input[type=date]');
+        const timeInput = el.querySelector('input[type=time]');
+        if (valor && (valor.fecha || valor.hora)) {
+          if (dateInput) dateInput.value = valor.fecha || '';
+          if (timeInput) timeInput.value = valor.hora || '';
+          conDatos++;
+        }
+      } else {
+        el.value = valor || '';
+        if (valor) { conDatos++; if (wrapper) wrapper.classList.add('prefilled'); const details = el.closest('details'); if (details) details.open = true; }
+      }
+    } catch (e) { /* campo no reconocido, se ignora */ }
+  });
+  ajustarTodosLosTextareas();
+  return conDatos;
+}
+
+// Precarga el nombre del paciente del caso elegido en vincular_caso.html, y lo deja
+// de solo lectura para que no se pueda cargar una entrada con un nombre distinto al del caso.
+async function precargarNombreDelCaso() {
+  if (!casoId) return;
+  const { data: caso } = await sb.from('casos').select('personas(nombre_completo)').eq('id', casoId).single();
+  const nombreInput = document.querySelector('[data-field="Text5"]');
+  if (caso && caso.personas && nombreInput) {
+    nombreInput.value = caso.personas.nombre_completo;
+    nombreInput.readOnly = true;
+  }
+}
+
+// Si venimos de "Editar" (menu.html → Historial, o desde el timeline de un caso) con ?editar=<id de entrada>,
+// cargamos esa entrada real desde Supabase — no hay copia local, esto funciona desde cualquier dispositivo.
+(async function cargarEntradaParaEditarSiCorresponde() {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('editar');
+  if (!id) return;
+  const statusEl = document.getElementById('status');
+  const btnGenerar = document.getElementById('generar');
+  // Bloqueamos "Generar" mientras carga: si tocás el botón antes de que termine, el sistema
+  // todavía no sabe que esta es una edición y crearía una entrada nueva en vez de actualizar.
+  if (btnGenerar) btnGenerar.disabled = true;
+  statusEl.textContent = "Cargando entrada del expediente...";
+  const { data: entrada, error } = await sb.from('entradas').select('id, caso_id, datos').eq('id', id).single();
+  if (error || !entrada) {
+    statusEl.textContent = "No se encontró esa entrada en el expediente.";
+    if (btnGenerar) btnGenerar.disabled = false;
+    return;
+  }
+  entradaSupabaseId = entrada.id;
+  casoId = entrada.caso_id;
+  await precargarNombreDelCaso();
+  const conDatos = precargarDatosFormulario(entrada.datos || {});
+  statusEl.textContent = `Editando esta entrada del expediente. Se cargaron ${conDatos} campos.`;
+  if (btnGenerar) btnGenerar.disabled = false;
+})();
+
+// Crea (o actualiza, si ya existe en esta página — recién creada o cargada con ?editar=) la entrada de este
+// hlc-07-S dentro del caso ya elegido en vincular_caso.html.
+async function crearOActualizarEntradaEnSupabase(pdfBytes) {
+  const statusEl = document.getElementById('status');
+  if (!casoId) return;
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+
+    if (entradaSupabaseId) {
+      await sb.from('entradas').update({ datos: recolectarDatosFormulario() }).eq('id', entradaSupabaseId);
+      const ruta = `casos/${casoId}/entrada_${entradaSupabaseId}.pdf`;
+      await sb.storage.from(BUCKET_ADJUNTOS).upload(ruta, pdfBytes, { contentType: 'application/pdf', upsert: true });
+      statusEl.textContent += ' Cambios guardados en el expediente.';
+      return;
+    }
+
+    const { data: entrada, error: errorEntrada } = await sb
+      .from('entradas')
+      .insert({ caso_id: casoId, autor_id: user.id, origen: 'hlc-07-S', datos: recolectarDatosFormulario() })
+      .select().single();
+    if (errorEntrada) throw errorEntrada;
+    entradaSupabaseId = entrada.id;
+
+    const ruta = `casos/${casoId}/entrada_${entrada.id}.pdf`;
+    const { error: errorSubida } = await sb.storage.from(BUCKET_ADJUNTOS).upload(ruta, pdfBytes, { contentType: 'application/pdf', upsert: true });
+    if (!errorSubida) {
+      await sb.from('archivos').insert({ entrada_id: entrada.id, nombre_original: lastFilename, ruta_storage: ruta, tipo: 'pdf' });
+    }
+
+    statusEl.textContent += ' Entrada agregada al expediente del caso.';
+  } catch (e) {
+    console.error('No se pudo guardar la entrada en Supabase:', e);
+    statusEl.textContent += ' (No se pudo guardar en el expediente: ' + e.message + ')';
+  }
+}
 
 document.querySelectorAll('.radio2').forEach(group => {
   const boxes = group.querySelectorAll('input[type=checkbox]');
@@ -295,18 +595,37 @@ document.querySelectorAll('.wa-btn').forEach(btn => {
   });
 });
 
-document.getElementById('upload-pdf').addEventListener('change', async (e) => {
-  const statusEl = document.getElementById('status');
-  const file = e.target.files[0];
-  if (!file) return;
-  statusEl.textContent = "Leyendo PDF cargado...";
-  try {
-    const { PDFDocument } = PDFLib;
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const pdfDoc = await PDFDocument.load(bytes);
-    const form = pdfDoc.getForm();
-    let conDatos = 0;
-    document.querySelectorAll('[data-field]').forEach(el => {
+document.querySelectorAll('.contact-action-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pair = btn.closest('.contact-pair');
+    const select = pair.querySelector('select');
+    const input = pair.querySelector('.contact-input-row input');
+    const metodo = select.value;
+    const dato = (input.value || '').trim();
+
+    if (!metodo) { alert('Elegí primero el método de contacto.'); return; }
+    if (!dato) { alert('Cargá el dato de contacto primero.'); return; }
+
+    if (metodo === 'E-mail') {
+      const abrir = confirm('¿Querés abrir el mail para escribirle a ' + dato + '?');
+      if (abrir) window.location.href = 'mailto:' + dato;
+    } else if (metodo === 'Celular') {
+      const digits = dato.replace(/\D/g, '');
+      if (!digits) { alert('No se reconoce un número de teléfono válido ahí.'); return; }
+      const abrir = confirm('¿Querés abrir este contacto en WhatsApp?');
+      if (abrir) window.open('https://wa.me/' + digits, '_blank');
+    } else {
+      alert('El método "' + metodo + '" no tiene un acceso directo todavía — llamá o escribí al dato cargado: ' + dato);
+    }
+  });
+});
+
+async function cargarCamposDesdeBytes(bytes) {
+  const { PDFDocument } = PDFLib;
+  const pdfDoc = await PDFDocument.load(bytes);
+  const form = pdfDoc.getForm();
+  let conDatos = 0;
+  document.querySelectorAll('[data-field]').forEach(el => {
       const fieldName = el.dataset.field;
       const type = el.dataset.type;
       const wrapper = el.closest('.fld, .chk');
@@ -363,6 +682,18 @@ document.getElementById('upload-pdf').addEventListener('change', async (e) => {
         }
       } catch (err) { }
     });
+  ajustarTodosLosTextareas();
+  return conDatos;
+}
+
+document.getElementById('upload-pdf').addEventListener('change', async (e) => {
+  const statusEl = document.getElementById('status');
+  const file = e.target.files[0];
+  if (!file) return;
+  statusEl.textContent = "Leyendo PDF cargado...";
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const conDatos = await cargarCamposDesdeBytes(bytes);
     statusEl.textContent = `Se cargaron ${conDatos} campos ya completados. El resto quedó libre para que lo completes.`;
   } catch (err) {
     statusEl.textContent = "No se pudo leer ese PDF: " + err.message;
@@ -370,7 +701,21 @@ document.getElementById('upload-pdf').addEventListener('change', async (e) => {
   }
 });
 
-document.getElementById('generar').addEventListener('click', async () => {
+// El hlc-07-S siempre necesita un caso ya elegido en vincular_caso.html.
+// Si no venimos de ahí (sin ?caso_id=) ni estamos editando una entrada existente (?editar=), mandamos a elegirlo primero.
+(function exigirCasoSiCorresponde() {
+  const params = new URLSearchParams(location.search);
+  if (!params.get('editar') && !casoId) {
+    window.location.href = 'vincular_caso.html';
+  }
+})();
+
+precargarNombreDelCaso();
+
+// El sistema de "editar" ahora vive enteramente en cargarEntradaParaEditarSiCorresponde() (más arriba),
+// que lee la entrada real desde Supabase — ya no hay historial local en este dispositivo.
+
+async function generarPDF() {
   const statusEl = document.getElementById('status');
   statusEl.textContent = "Generando...";
   try {
@@ -417,54 +762,110 @@ document.getElementById('generar').addEventListener('click', async () => {
     });
     const pdfBytes = await pdfDoc.save();
     lastBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+    // Versión "plana": los mismos datos pero convertidos en texto fijo (ya no editable).
+    // Se usa solo para compartir/ver, así se muestra bien en cualquier vista previa
+    // (WhatsApp, notificación de descarga, etc). La versión editable de arriba (lastBlob)
+    // es la que se guarda en el historial y sirve para volver a cargarla y seguir editando.
+    try {
+      const flatDoc = await PDFDocument.load(pdfBytes);
+      flatDoc.getForm().flatten();
+      const flatBytes = await flatDoc.save();
+      lastFlatBlob = new Blob([flatBytes], { type: 'application/pdf' });
+    } catch (e) {
+      console.warn('No se pudo generar la versión plana, se usará la editable:', e);
+      lastFlatBlob = lastBlob;
+    }
+
     const nombreInput = document.querySelector('[data-field="Text5"]');
     const nombrePaciente = (nombreInput && nombreInput.value.trim())
       ? nombreInput.value.trim().replace(/\s+/g, '-') : 'sin-nombre';
     const hoy = new Date().toISOString().slice(0,10);
     lastFilename = `hlc-07-S_${nombrePaciente}_${hoy}.pdf`;
 
-    // Guardar en el historial local (nunca en la nube)
-    try {
-      const b64Out = btoa(String.fromCharCode(...pdfBytes));
-      const etiqueta = (nombreInput && nombreInput.value.trim()) ? nombreInput.value.trim() : 'Sin nombre';
-      const registro = {
-        id: 'h' + Date.now(),
-        formType: 'hlc-07-S',
-        formFile: 'hlc07_prototipo.html',
-        formLabel: 'Hoja de trabajo - Emergencias médicas',
-        label: etiqueta,
-        date: new Date().toISOString(),
-        filename: lastFilename,
-        pdfBase64: b64Out
-      };
-      const HIST_KEY = 'hlc_historial_v1';
-      let hist = [];
-      try { hist = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch (e) { hist = []; }
-      hist.unshift(registro);
-      if (hist.length > 30) hist = hist.slice(0, 30);
-      localStorage.setItem(HIST_KEY, JSON.stringify(hist));
-    } catch (e) { console.warn('No se pudo guardar en el historial local:', e); }
-
-    document.getElementById('compartir').style.display = 'block';
-    document.getElementById('descargar').style.display = 'block';
     statusEl.textContent = "Listo. Usá Descargar para guardarlo o Compartir para mandarlo por WhatsApp/mail.";
+
+    // Agregar esta carga como una entrada nueva dentro del caso ya elegido en vincular_caso.html
+    // (o actualizar la entrada, si la abrimos para editar) — esta es la única copia que existe.
+    await crearOActualizarEntradaEnSupabase(pdfBytes);
+
+    // Recordatorios según lo configurado en la pestaña Configuración (index.html).
+    const cfg = getConfig();
+    const recordatorios = document.getElementById('recordatorios');
+    recordatorios.innerHTML = '';
+    if (cfg.driveEnabled && cfg.driveFolderLink) {
+      const div = document.createElement('div');
+      div.className = 'recordatorio';
+      div.innerHTML = `📁 Recordá guardarlo en la carpeta de Drive del comité. <a href="${cfg.driveFolderLink}" target="_blank" rel="noopener">Abrir carpeta</a>`;
+      recordatorios.appendChild(div);
+    }
+    if (cfg.correoEnabled && cfg.correoDestino) {
+      const div = document.createElement('div');
+      div.className = 'recordatorio';
+      const asunto = encodeURIComponent(lastFilename);
+      div.innerHTML = `✉️ Recordá enviarlo por correo. <a href="mailto:${cfg.correoDestino}?subject=${asunto}">Preparar correo</a> (adjuntá el PDF que descargaste)`;
+      recordatorios.appendChild(div);
+    }
+    return true;
   } catch (e) {
     statusEl.textContent = "Error al generar: " + e.message;
     console.error(e);
+    return false;
   }
+}
+
+document.getElementById('generar').addEventListener('click', async () => {
+  const ok = await generarPDF();
+  if (!ok) return;
+  document.getElementById('generar').style.display = 'none';
+  const puedeCompartir = !!(navigator.canShare && navigator.share);
+  document.getElementById('compartir').style.display = puedeCompartir ? 'block' : 'none';
+  document.getElementById('descargar').style.display = puedeCompartir ? 'none' : 'block';
 });
 
-document.getElementById('descargar').addEventListener('click', () => {
-  if (!lastBlob) return;
-  const url = URL.createObjectURL(lastBlob);
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = lastFilename; a.click();
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 1000);
+}
+
+document.getElementById('filename-cancel').addEventListener('click', () => {
+  document.getElementById('filename-modal-overlay').classList.remove('open');
+});
+
+document.getElementById('filename-confirm').addEventListener('click', () => {
+  let nombre = document.getElementById('filename-input').value.trim();
+  if (!nombre) nombre = 'formulario';
+  nombre = nombre.replace(/[\\\/:*?"<>|]/g, '-');
+  lastFilename = /\.pdf$/i.test(nombre) ? nombre : nombre + '.pdf';
+  document.getElementById('filename-modal-overlay').classList.remove('open');
+
+  triggerDownload(lastBlob, lastFilename);
+});
+
+document.getElementById('descargar').addEventListener('click', async () => {
+  const ok = await generarPDF();
+  if (!ok || !lastBlob) return;
+  const base = lastFilename.replace(/\.pdf$/i, '');
+  document.getElementById('filename-input').value = base;
+  document.getElementById('filename-modal-overlay').classList.add('open');
+  document.getElementById('filename-input').focus();
 });
 
 document.getElementById('compartir').addEventListener('click', async () => {
   const statusEl = document.getElementById('status');
-  if (!lastBlob) return;
-  const file = new File([lastBlob], lastFilename, { type: 'application/pdf' });
+  const ok = await generarPDF();
+  if (!ok || !lastBlob) return;
+  const blobToShare = lastFlatBlob || lastBlob;
+  const file = new File([blobToShare], lastFilename, { type: 'application/pdf' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], title: 'Hoja de trabajo HLC' }); }
     catch (e) { statusEl.textContent = "Se canceló el envío."; }
@@ -480,5 +881,7 @@ if ("serviceWorker" in navigator) {
   });
 }
 </script>
+
+
 </body>
 </html>

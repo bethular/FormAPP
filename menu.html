@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2f5d50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Formularios CEH">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Formularios CEH</title>
+<style>
+  :root {
+    --paper: #f6f4ef; --ink: #1f2a24; --line: #c9c2b3;
+    --accent: #2f5d50; --accent-soft: #e4ece8; --danger: #8a3b2b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Iowan Old Style', 'Georgia', serif; padding-bottom: 60px;
+  }
+  header { padding: 32px 20px 20px; border-bottom: 2px solid var(--ink); position: relative; }
+  header .kicker {
+    font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  header h1 { margin: 8px 0 6px; font-size: 26px; line-height: 1.25; }
+  header p { margin: 0; font-size: 14px; color: #5a5347; font-family: -apple-system, sans-serif; max-width: 520px; }
+
+  main { max-width: 720px; margin: 0 auto; padding: 22px 16px; }
+
+  .tab-bar {
+    display: flex; gap: 8px; margin-bottom: 22px; border-bottom: 2px solid var(--ink);
+  }
+  .tab-btn {
+    flex: 1; font-family: -apple-system, sans-serif; font-weight: 700; font-size: 16px;
+    text-transform: uppercase; letter-spacing: 0.04em; padding: 14px 8px; border: none;
+    background: none; color: #8a8375; cursor: pointer; border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  h2.section-title {
+    font-size: 15px; font-family: -apple-system, sans-serif; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent);
+    margin: 28px 0 12px;
+  }
+  h2.section-title:first-child { margin-top: 0; }
+
+  .cards { display: grid; gap: 12px; }
+  .card {
+    display: flex; align-items: center; gap: 14px;
+    background: #fffdf9; border: 1px solid var(--line); border-radius: 6px;
+    padding: 16px; text-decoration: none; color: var(--ink);
+  }
+  .card .code {
+    font-family: 'Courier New', monospace; font-size: 16px; font-weight: 700; color: #fff;
+    background: var(--accent); padding: 7px 11px; border-radius: 4px; flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+  .card .info { flex: 1; }
+  .card .info .name { font-weight: 600; font-size: 16px; }
+  .card.form-card .info .name { font-size: 14.5px; color: #5a5347; }
+  .card .info .desc {
+    font-family: -apple-system, sans-serif; font-size: 12.5px; color: #5a5347; margin-top: 2px;
+  }
+  .card .arrow { font-size: 20px; color: var(--accent); }
+
+  .hist-list { display: grid; gap: 8px; }
+  .hist-item {
+    display: flex; align-items: center; gap: 12px;
+    background: #fffdf9; border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px;
+    font-family: -apple-system, sans-serif;
+  }
+  .hist-item .badge {
+    font-size: 10.5px; font-weight: 700; color: var(--accent); background: var(--accent-soft);
+    padding: 3px 7px; border-radius: 3px; flex-shrink: 0; white-space: nowrap;
+  }
+  .hist-item .hinfo { flex: 1; min-width: 0; }
+  .hist-item .hname { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hist-item .hdate { font-size: 11.5px; color: #8a8375; }
+  .hist-item button {
+    font-family: -apple-system, sans-serif; font-size: 12.5px; font-weight: 700;
+    padding: 7px 10px; border-radius: 6px; border: 1px solid transparent; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .hist-item button.del { background: var(--danger); color: #fff; font-size: 16px; padding: 4px 6px; }
+  .hist-item button.primary { background: var(--accent); color: #fff; }
+  .hist-item .hbtns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  /* Acciones de Médicos colaboradores dentro de un menú por fila. */
+  .hist-item-actions {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .hist-item-menu-btn {
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(0,0,0,.12);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+  }
+  .hist-item-menu-btn:hover {
+    background: var(--accent-soft);
+  }
+  .hist-item-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 95;
+    min-width: 145px;
+    padding: 5px;
+    background: #fffdf9;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  }
+  .hist-item-actions.open .hist-item-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .hist-item-menu button {
+    width: 100%;
+    min-height: 36px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink);
+    padding: 8px 10px;
+    font-family: -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hist-item-menu button:hover {
+    background: var(--accent-soft);
+  }
+  .hist-item-menu button.hist-item-borrar:hover {
+    background: #f7e7e3;
+    color: var(--danger);
+  }
+
+  .empty-state {
+    font-family: -apple-system, sans-serif; font-size: 13px; color: #8a8375;
+    text-align: center; padding: 24px 12px; border: 1px dashed var(--line); border-radius: 6px;
+  }
+
+  .hist-groups { display: grid; gap: 10px; }
+  .hist-group {
+    background: #fffdf9; border: 1px solid var(--line); border-radius: 6px;
+  }
+  .hist-group summary {
+    list-style: none; cursor: pointer; padding: 14px 16px;
+    font-family: -apple-system, sans-serif; font-weight: 600; font-size: 14.5px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hist-group summary::-webkit-details-marker { display: none; }
+  .hist-group summary .code {
+    font-family: 'Courier New', monospace; font-size: 11px; color: #fff;
+    background: var(--accent); padding: 3px 7px; border-radius: 3px;
+  }
+  .hist-container { padding: 0 16px 14px; }
+
+  .privacy-note {
+    margin-top: 22px; padding: 12px 14px; background: var(--accent-soft); border-radius: 6px;
+    font-family: -apple-system, sans-serif; font-size: 12px; color: var(--accent); line-height: 1.5;
+  }
+
+  .hist-view-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+  .dash-intro { font-family: -apple-system, sans-serif; font-size: 12.5px; color: #5a5347; margin: 0 0 10px; }
+  .dash-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+  .dash-tabla { border-collapse: collapse; width: 100%; font-family: -apple-system, sans-serif; font-size: 12.5px; }
+  .dash-tabla th, .dash-tabla td { padding: 7px 10px; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); }
+  .dash-tabla th:last-child, .dash-tabla td:last-child { border-right: none; }
+  .dash-tabla thead th { background: #dfe5eb; color: #20242a; font-weight: 800; }
+  .dash-tabla .dash-especialidad-head { text-align: left; position: sticky; left: 0; z-index: 3; min-width: 155px; }
+  .dash-tabla .dash-zona-head { min-width: 72px; white-space: normal; line-height: 1.05; }
+  .dash-tabla .dash-especialidad { text-align: left; font-weight: 500; background: #dfe0e1; position: sticky; left: 0; z-index: 2; }
+  .dash-tabla .dash-celda { font-size: 13px; font-weight: 700; min-width: 52px; cursor: pointer; transition: filter .12s, transform .05s; }
+  .dash-tabla .dash-celda:hover { filter: brightness(.94); }
+  .dash-tabla .dash-celda:active { transform: scale(.97); }
+  .dash-tabla .dash-celda:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .dash-tabla .dash-si { background: #00b050; color: #111; }
+  .dash-tabla .dash-no { background: #ff0000; color: #111; }
+  .dash-modal-backdrop { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.35); }
+  .dash-modal { width: min(430px, 100%); max-height: min(620px, 90vh); overflow: auto; background: #fffdf9; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.25); }
+  .dash-modal-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 15px; border-bottom:1px solid var(--line); background:var(--accent-soft); color:var(--accent); }
+  .dash-modal-close { border:0; background:transparent; font-size:24px; line-height:1; cursor:pointer; color:inherit; }
+  .dash-modal-body { padding:8px; display:grid; gap:6px; }
+  .dash-medico-opcion { display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:7px; background:#fff; cursor:pointer; text-align:left; }
+  .dash-medico-opcion:hover { background:var(--accent-soft); }
+  .dash-medico-opcion span { font-weight:700; color:#222; }
+  .dash-medico-opcion small { color:#6b655c; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filter-chip {
+    font-family: -apple-system, sans-serif; font-size: 12.5px; font-weight: 600; padding: 6px 12px;
+    border-radius: 14px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  .filter-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .lista { background: #fffdf9; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .caso-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+    border-bottom: 1px solid var(--line); cursor: pointer; font-family: -apple-system, sans-serif;
+  }
+  .caso-row:last-child { border-bottom: none; }
+  .caso-row:active { background: var(--accent-soft); }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
+  .caso-info { flex: 1; min-width: 0; }
+  .caso-info .nombre { font-weight: 600; font-size: 14.5px; margin: 0; }
+  .caso-info .meta { font-size: 12px; color: #5a5347; margin: 2px 0 0; }
+  .estado-pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; flex-shrink: 0; white-space: nowrap; }
+  .estado-activo { background: var(--accent-soft); color: var(--accent); }
+  .estado-seguimiento { background: #f6e9df; color: var(--danger); }
+  .estado-cerrado { background: #ece9e2; color: #5a5347; }
+  .vacio { text-align: center; padding: 30px 16px; font-family: -apple-system, sans-serif; font-size: 13.5px; color: #5a5347; }
+
+  .menu-btn {
+    position: absolute; top: 30px; right: 20px; z-index: 60;
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,0.6); color: var(--ink); font-size: 20px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; line-height: 1;
+  }
+  .menu-dropdown {
+    display: none; position: absolute; top: 74px; right: 20px; z-index: 61;
+    background: #fffdf9; border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18); min-width: 220px; overflow: hidden;
+  }
+  .menu-dropdown.open { display: block; }
+  .menu-dropdown a, .menu-dropdown button.menu-item {
+    display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
+    padding: 14px 16px; font-family: -apple-system, sans-serif; font-size: 16px; color: var(--ink);
+    text-decoration: none; border: none; background: none; cursor: pointer; text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .menu-dropdown a:last-child, .menu-dropdown button.menu-item:last-child { border-bottom: none; }
+  .menu-dropdown a:active, .menu-dropdown button.menu-item:active { background: var(--accent-soft); }
+  .menu-dropdown .menu-version {
+    padding: 10px 16px; font-family: -apple-system, sans-serif; font-size: 11.5px; color: #8a8375;
+  }
+  .notif-btn {
+    position: fixed; top: 9px; right: 24px; z-index: 140;
+    width: 44px; height: 44px; border-radius: 50%; border: none;
+    background: var(--accent); color: #fff; font-size: 18px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+    display: none; align-items: center; justify-content: center;
+    text-decoration: none;
+  }
+  .notif-btn .badge {
+    position: absolute; top: -4px; right: -4px; background: var(--danger); color: #fff;
+    border-radius: 999px; font-family: -apple-system, sans-serif; font-size: 10.5px; font-weight: 700;
+    min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; padding: 0 3px;
+  }
+  .info-modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .info-modal-overlay.open { display: flex; }
+  .info-modal {
+    background: #fffdf9; border-radius: 8px; max-width: 480px; max-height: 80vh; overflow-y: auto;
+    padding: 22px; font-family: -apple-system, sans-serif; font-size: 13.5px; line-height: 1.6; color: #1f2a24;
+  }
+  .info-modal h3 { margin-top: 0; font-family: 'Iowan Old Style', Georgia, serif; }
+  .info-modal p { margin: 0 0 10px; }
+  .info-modal .info-email { font-weight: 600; }
+  .info-modal .info-version { font-size: 11px; color: #8a8375; margin-top: 14px; }
+  .info-modal-close { margin-top: 8px; width: 100%; padding: 11px; border-radius: 4px; border: none; background: #2f5d50; color: #fff; font-weight: 600; cursor: pointer; font-family: -apple-system, sans-serif; font-size: 14px; }
+
+  .upload-modal label.f-label { display: block; font-weight: 600; font-size: 13px; margin: 12px 0 5px; }
+  .upload-modal select, .upload-modal input[type="text"] {
+    width: 100%; padding: 10px; border: 1px solid #c9c2b3; border-radius: 4px;
+    font-family: -apple-system, sans-serif; font-size: 15px; box-sizing: border-box;
+  }
+  .upload-modal input[type="file"] { width: 100%; font-family: -apple-system, sans-serif; font-size: 13.5px; }
+  .upload-modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .upload-modal-actions button {
+    flex: 1; padding: 11px; border-radius: 4px; border: none; font-weight: 600;
+    font-family: -apple-system, sans-serif; font-size: 14px; cursor: pointer;
+  }
+  .upload-btn-secondary { background: #e4ece8; color: #2f5d50; }
+  .upload-btn-primary { background: #2f5d50; color: #fff; }
+  .upload-status { font-size: 12.5px; color: var(--danger); margin-top: 8px; min-height: 16px; }
+
+  .hist-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; font-family: -apple-system, sans-serif; }
+  .hist-filters input[type="text"], .hist-filters select {
+    padding: 9px 10px; border: 1px solid var(--line); border-radius: 4px; font-size: 13.5px;
+    background: #fff; color: var(--ink); font-family: -apple-system, sans-serif;
+  }
+  #hist-search { flex: 1; min-width: 140px; }
+  .no-match { font-family: -apple-system, sans-serif; font-size: 12.5px; color: #8a8375; padding: 10px 4px; }
+  .buscador-medico-card { display:grid; gap:8px; background:#fffdf9; border:1px solid var(--line); border-radius:8px; padding:14px; font-family:-apple-system,sans-serif; }
+  .buscador-medico-card + .buscador-medico-card { margin-top:8px; }
+  .buscador-medico-nombre { font-size:16px; font-weight:700; color:var(--ink); }
+  .buscador-medico-dato { font-size:13px; color:#5a5347; }
+  .buscador-medico-whatsapp { justify-self:start; margin-top:3px; padding:8px 12px; border:0; border-radius:6px; background:var(--accent); color:#fff; font:700 12.5px -apple-system,sans-serif; cursor:pointer; }
+  .buscador-medico-vacio { font-family:-apple-system,sans-serif; font-size:13px; color:#8a8375; text-align:center; padding:24px 12px; border:1px dashed var(--line); border-radius:6px; }
+
+  /* ===== Diseño profesional para PC ===== */
+  .desktop-welcome { display: none; }
+  .sidebar-toggle { display: none; }
+  .sidebar-head, .sidebar-divider, .sidebar-link, .sidebar-brand { display: none; }
+
+  @media (min-width: 1000px) {
+    :root {
+      --paper: #f4f7fb; --ink: #17324d; --line: #d8e2ec;
+      --accent: #1769aa; --accent-soft: #e8f3fb; --danger: #b43b3b;
+    }
+    body { background: #f4f7fb; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding-bottom: 30px; }
+    header {
+      height: 92px; padding: 0 38px; display: flex; align-items: center;
+      background: linear-gradient(115deg, #0d4777, #1769aa 60%, #2486c4);
+      color: #fff; border: 0; position: relative; z-index: 30;
+      box-shadow: 0 3px 18px rgba(18,55,88,.18);
+    }
+    header .kicker { display: none; }
+    header h1 { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 30px; font-weight: 750; letter-spacing: -.02em; }
+    header p { margin: 5px 0 0; color: rgba(255,255,255,.82); font-size: 14px; max-width: 720px; }
+    header:after {
+      content: "Aplicación independiente"; position: absolute; right: 38px; top: 31px;
+      padding: 8px 13px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px;
+      color: #fff; background: rgba(255,255,255,.10); font-size: 12px; font-weight: 650;
+    }
+    main { max-width: none; margin: 0; padding: 34px 44px 48px 318px; min-height: calc(100vh - 92px); transition: padding-left .22s ease; }
+    body.sidebar-collapsed main { padding-left: 112px; }
+    .desktop-welcome {
+      display: flex; align-items: stretch; gap: 28px; margin: 0 0 28px;
+      background: linear-gradient(120deg, #fff, #edf6fc); border: 1px solid #d5e5f1; border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(28,76,113,.08); overflow: hidden;
+    }
+    .welcome-copy { flex: 1; padding: 30px 34px; }
+    .welcome-eyebrow { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: #1769aa; margin-bottom: 9px; }
+    .welcome-copy h1 { margin: 0 0 10px; font-size: 34px; color: #123d63; letter-spacing: -.03em; }
+    .welcome-copy p { margin: 0; max-width: 760px; font-size: 15px; line-height: 1.65; color: #50677c; }
+    .independent-badge { margin-top: 18px; display: inline-flex; padding: 9px 12px; border-radius: 9px; background: #fff7e7; border: 1px solid #f0d89f; color: #735a19; font-size: 12px; font-weight: 650; }
+    .welcome-actions { width: 310px; padding: 22px; display: grid; gap: 10px; background: rgba(255,255,255,.72); border-left: 1px solid #dbe8f1; }
+    .quick-action { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 13px 15px; border: 1px solid #d5e2ec; border-radius: 11px; background: #fff; color: #164f7d; text-decoration: none; transition: transform .12s, box-shadow .12s; }
+    .quick-action:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(30,83,122,.10); }
+    .quick-action.primary { border-color: #b9d9ed; background: #eef8ff; }
+    .quick-action span { font-weight: 800; font-size: 14px; }
+    .quick-action small { grid-column: 1; color: #688096; font-size: 11px; }
+    .quick-action b { grid-row: 1 / span 2; grid-column: 2; font-size: 21px; color: #1769aa; }
+
+    .tab-bar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 286px; z-index: 80;
+      margin: 0; padding: 28px 18px 20px; border: 0; border-radius: 0;
+      background: linear-gradient(180deg, #083f6a 0%, #0c568c 54%, #083b63 100%);
+      display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+      box-shadow: 5px 0 22px rgba(8,53,88,.16); transform: translateX(0); transition: transform .22s ease, width .22s ease;
+    }
+    .sidebar-head { display: block; color: #fff; padding: 7px 14px 22px; }
+    .sidebar-title { font-size: 26px; font-weight: 800; letter-spacing: -.03em; }
+    .sidebar-subtitle { margin-top: 3px; color: rgba(255,255,255,.68); font-size: 12px; }
+    .tab-btn {
+      flex: none; width: 100%; display: flex; align-items: center; gap: 13px; justify-content: flex-start;
+      min-height: 58px; padding: 12px 16px; border: 1px solid transparent; border-radius: 12px;
+      margin: 0; color: rgba(255,255,255,.84); background: transparent; text-align: left;
+      font-size: 15px; font-weight: 700; text-transform: none; letter-spacing: 0;
+    }
+    .tab-btn:before { width: 28px; text-align: center; font-size: 20px; opacity: .95; }
+    #tab-btn-formularios:before { content: "▤"; }
+    #tab-btn-historial:before { content: "♟"; }
+    #tab-btn-casos:before { content: "▣"; }
+    .tab-btn:hover { color: #fff; background: rgba(255,255,255,.09); }
+    .tab-btn.active { color: #fff; background: rgba(255,255,255,.17); border-color: rgba(255,255,255,.12); box-shadow: inset 4px 0 0 #5cc3ff; }
+    .sidebar-divider { display: block; height: 1px; background: rgba(255,255,255,.16); margin: 10px 10px 4px; }
+    .sidebar-link { display: flex; align-items: center; gap: 13px; min-height: 48px; padding: 10px 16px; border: 0; border-radius: 11px; color: rgba(255,255,255,.78); background: transparent; text-decoration: none; font: 700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; cursor: pointer; text-align: left; }
+    .sidebar-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .sidebar-brand { display: flex; margin-top: auto; padding: 18px 10px 4px; flex-direction: column; align-items: flex-start; color: rgba(255,255,255,.92); }
+    .sidebar-brand img { width: 78px; height: auto; max-height: 96px; object-fit: contain; margin-bottom: 9px; opacity: .96; }
+    .sidebar-brand div { font-size: 11px; line-height: 1.35; font-weight: 750; }
+    .sidebar-brand small { margin-top: 7px; color: rgba(255,255,255,.55); font-size: 9.5px; }
+    .sidebar-toggle {
+      display: flex; position: fixed; left: 264px; top: 15px; z-index: 100;
+      width: 40px; height: 40px; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,.22); border-radius: 10px; background: rgba(0,0,0,.12); color: #fff;
+      font-size: 19px; cursor: pointer; transition: left .22s ease, transform .22s ease;
+    }
+    body.sidebar-collapsed .tab-bar { transform: translateX(-286px); }
+    body.sidebar-collapsed .sidebar-toggle { left: 15px; transform: rotate(180deg); background: #1769aa; }
+    .menu-btn { top: 26px; right: 160px; background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.22); }
+    .menu-dropdown { top: 78px; right: 38px; border-color: #d8e2ec; }
+    .cards { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .card { min-height: 155px; padding: 24px; border-radius: 15px; border: 1px solid #d7e3ed; box-shadow: 0 5px 18px rgba(22,66,101,.06); background: #fff; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(22,66,101,.10); }
+    .card .code { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; background: #1769aa; border-radius: 9px; padding: 9px 12px; }
+    .card .info .name, .card.form-card .info .name { font-size: 17px; color: #173e61; }
+    .card .info .desc { font-size: 13px; color: #6b8193; }
+    .card .arrow { font-size: 28px; }
+    .section-title { color: #1769aa !important; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; font-size: 18px !important; text-transform: none !important; letter-spacing: 0 !important; margin: 8px 0 16px !important; }
+    .hist-view-toggle { gap: 10px; }
+    .filter-chip { padding: 10px 16px; font-size: 13px; border-radius: 10px; border-color: #d5e1eb; }
+    .filter-chip.active { background: #1769aa; border-color: #1769aa; }
+    .lista, .hist-group, .dash-scroll { border-color: #d7e3ed; border-radius: 12px; box-shadow: 0 4px 16px rgba(22,66,101,.05); }
+    .hist-item { padding: 15px 18px; }
+    .privacy-note { border-radius: 10px; background: #eaf5fc; color: #245c84; border: 1px solid #d3e8f5; }
+    .info-btn { bottom: 22px; right: 22px; background: #173e61; }
+    .notif-btn { top: 9px; right: 24px; }
+    .desktop-welcome + .tab-bar { /* keep nav visually independent from content */ }
+  }
+
+  @media (min-width: 860px) {
+    main { max-width: 960px; padding: 32px 24px; }
+    header { padding: 40px 24px 24px; }
+    header h1 { font-size: 30px; }
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    .tab-bar { max-width: 340px; }
+  }
+  @media (min-width: 1000px) {
+    header { padding: 0 38px; }
+    main { max-width: none; margin: 0; padding: 34px 44px 48px 318px; }
+    body.sidebar-collapsed main { padding-left: 112px; }
+    .cards { grid-template-columns: repeat(3, 1fr); }
+    .tab-bar { max-width: none; }
+  }
+
+
+  /* ===== FormAPP PC — versión de escritorio refinada ===== */
+  @media (min-width: 1000px) {
+    body { background: #f4f8fc; padding-bottom: 0; }
+    .topbar { position: fixed; inset: 0 0 auto 0; height: 62px; padding: 0 26px; z-index: 120; display:flex; align-items:center; justify-content:space-between; background: linear-gradient(105deg,#0a4c7c,#1769aa 60%,#2387c4); color:#fff; border:0; box-shadow:0 3px 18px rgba(8,53,88,.20); }
+    .topbar-left,.topbar-account{display:flex;align-items:center;}
+    .topbar-toggle{position:static !important; width:42px;height:42px;margin-right:16px;border-radius:10px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.25);}
+    .topbar-brand{line-height:1.05}.topbar-formapp{font-size:23px;font-weight:850;letter-spacing:-.03em}.topbar-caption{margin-top:5px;font-size:11px;color:rgba(255,255,255,.76)}
+    .tab-bar{top:62px !important;bottom:0 !important;width:254px !important;padding:22px 16px 16px !important;box-shadow:5px 0 22px rgba(8,53,88,.15) !important;}
+    .sidebar-head{padding:4px 14px 17px !important}.sidebar-title{font-size:23px !important}.sidebar-subtitle{font-size:11px !important}
+    .tab-btn{min-height:50px !important;padding:10px 14px !important;font-size:14px !important;border-radius:11px !important}.tab-btn:before{font-size:19px !important}
+    #tab-btn-inicio:before{content:"⌂"} #tab-btn-formularios:before{content:"▤"} #tab-btn-historial:before{content:"♟"} #tab-btn-casos:before{content:"▣"}
+    .sidebar-brand img{width:70px !important}.sidebar-brand div{font-size:10px !important}.sidebar-brand small{font-size:9px !important}
+    .sidebar-toggle{z-index:130 !important}.topbar-toggle{transition:all .2s ease}.topbar-toggle:hover{background:rgba(255,255,255,.18)}
+    main{margin-top:62px !important;padding:30px 38px 38px 286px !important;min-height:calc(100vh - 62px) !important;transition:padding-left .22s ease}.sidebar-collapsed main{padding-left:72px !important}.sidebar-collapsed .tab-bar{transform:translateX(-254px) !important}.sidebar-collapsed .topbar-toggle{transform:rotate(0deg)}
+    .desktop-welcome{display:none !important}
+    .home-hero{position:relative;min-height:218px;border:1px solid #d5e5f1;border-radius:17px;overflow:hidden;background:#fff url('hero-formapp.png') right center/auto 100% no-repeat;box-shadow:0 9px 28px rgba(28,76,113,.08);}
+    .home-hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.99) 0%,rgba(255,255,255,.95) 45%,rgba(255,255,255,.28) 72%,rgba(255,255,255,0) 100%);pointer-events:none}
+    .home-hero-copy{position:relative;z-index:2;max-width:720px;padding:29px 34px}.home-eyebrow{font-size:11px;font-weight:850;letter-spacing:.12em;color:#1769aa;text-transform:uppercase;margin-bottom:8px}.home-hero h1{margin:0 0 9px;font-size:36px;letter-spacing:-.035em;color:#123d63}.home-hero p{margin:0;max-width:690px;font-size:15px;line-height:1.62;color:#4e687d}.home-disclaimer{margin-top:15px;display:inline-block;max-width:670px;padding:9px 12px;border-radius:9px;background:#fff7e7;border:1px solid #efd99f;color:#735a19;font-size:11.5px;line-height:1.45}
+    .home-feature-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:17px}.home-feature{min-height:142px;padding:16px;border-radius:14px;border:1px solid #d8e4ee;text-align:left;text-decoration:none;color:#173e61;display:grid;grid-template-columns:1fr auto;align-content:start;gap:5px 8px;cursor:pointer;box-shadow:0 5px 18px rgba(22,66,101,.05);transition:transform .12s,box-shadow .12s}.home-feature:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(22,66,101,.09)}.home-feature .feature-icon{grid-column:1/3;width:43px;height:43px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:21px;margin-bottom:4px}.home-feature strong{font-size:16px}.home-feature small{grid-column:1/3;font-size:11.5px;line-height:1.45;color:#577089}.home-feature b{grid-column:2;grid-row:2/4;align-self:end;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;font-size:18px}.home-feature.blue{background:#e9f6ff}.home-feature.blue .feature-icon{background:#1769aa}.home-feature.blue b{color:#1769aa}.home-feature.teal{background:#eafaf8}.home-feature.teal .feature-icon{background:#12a6a0}.home-feature.teal b{color:#008e89}.home-feature.purple{background:#f4efff}.home-feature.purple .feature-icon{background:#8050c9}.home-feature.purple b{color:#8050c9}.home-feature.orange{background:#fff5e8}.home-feature.orange .feature-icon{background:#f39a16}.home-feature.orange b{color:#e58200}.home-feature.navy{background:#edf5fc}.home-feature.navy .feature-icon{background:#1769aa}.home-feature.navy b{color:#1769aa}
+    .home-lower-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;margin-top:18px}.home-panel-card{background:#fff;border:1px solid #d8e4ee;border-radius:14px;padding:15px;min-height:225px}.panel-heading{display:flex;align-items:center;gap:9px;color:#1769aa;margin-bottom:12px}.panel-heading>span{font-size:20px}.panel-heading h2{margin:0;font-size:17px}.panel-heading button{margin-left:auto;border:0;background:none;color:#1769aa;font-size:11px;cursor:pointer}.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.quick-card{min-height:126px;padding:13px;border-radius:11px;border:1px solid #d5e2ec;text-decoration:none;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;color:#174e7d}.quick-card.blue{background:#eef8ff}.quick-card.purple{background:#f6f1ff}.quick-card.teal{background:#edfbfa}.quick-icon{width:39px;height:39px;border-radius:50%;background:#1769aa;color:#fff;display:flex;align-items:center;justify-content:center}.purple .quick-icon{background:#8050c9}.teal .quick-icon{background:#12a6a0}.quick-card strong{display:block;font-size:14px}.quick-card small{display:block;margin-top:3px;font-size:10.5px;color:#668097;line-height:1.35}.quick-card b{font-size:20px;color:#1769aa}.news-list{display:grid;gap:8px}.news-item{display:flex;gap:11px;padding:10px 12px;border-radius:9px;align-items:flex-start}.blue-news{background:#eef7ff}.teal-news{background:#edfafa}.news-icon{width:29px;height:29px;border-radius:7px;background:#1769aa;color:#fff;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.teal-news .news-icon{background:#12a6a0}.news-title{font-size:11.5px;font-weight:800;color:#174f7d}.news-title small{font-weight:500;color:#7890a4;margin-left:8px}.news-text{font-size:10.5px;color:#577089;line-height:1.45;margin-top:3px}.news-loading,.news-empty{font-size:12px;color:#7b91a3;padding:15px;text-align:center}.home-independent-strip{margin-top:15px;display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #cfe3f2;background:#eaf5fc;border-radius:10px;color:#315f7f;font-size:11px;line-height:1.4}.strip-icon{font-size:19px;color:#1769aa}.strip-right{margin-left:auto;white-space:nowrap;color:#5d7990}
+    .tab-panel{min-width:0}.section-title{font-size:20px !important;margin:5px 0 16px !important}.cards{grid-template-columns:repeat(3,1fr);gap:16px}.card{min-height:150px}.hist-filters input,.hist-filters select{min-height:40px}.privacy-note{font-size:11px}.info-modal{max-width:620px}.menu-btn{display:none}.notif-btn{top:9px;right:24px}
+    .tab-btn.active{box-shadow:inset 4px 0 0 #62c7ff !important}
+  }
+  @media (max-width: 1199px) and (min-width: 1000px){.home-feature-grid{grid-template-columns:repeat(3,1fr)}.home-lower-grid{grid-template-columns:1fr}.quick-grid{grid-template-columns:repeat(3,1fr)}}
+
+  @media (max-width: 999px){
+    html, body{
+      width:100%;
+      max-width:100%;
+      overflow-x:hidden;
+    }
+
+    body{
+      padding-bottom:30px;
+    }
+
+    /* ===== UN SOLO BOTÓN DE MENÚ EN TELÉFONO ===== */
+    #sidebar-toggle{
+      display:flex !important;
+      position:fixed !important;
+      top:12px !important;
+      right:12px !important;
+      left:auto !important;
+      z-index:150 !important;
+      width:44px !important;
+      height:44px !important;
+      margin:0 !important;
+      align-items:center !important;
+      justify-content:center !important;
+      border:1px solid rgba(255,255,255,.25) !important;
+      border-radius:11px !important;
+      background:#1769aa !important;
+      color:#fff !important;
+      font-size:22px !important;
+      cursor:pointer !important;
+      box-shadow:0 3px 12px rgba(0,0,0,.22) !important;
+    }
+
+    .notif-btn{
+      top:12px !important;
+      right:68px !important;
+      width:44px !important;
+      height:44px !important;
+      z-index:150 !important;
+    }
+
+    /* ===== MENÚ LATERAL MÓVIL ===== */
+    .tab-bar{
+      position:fixed;
+      left:0;
+      top:0;
+      bottom:0;
+      width:min(310px,86vw);
+      max-width:none;
+      height:auto;
+      margin:0;
+      padding:24px 16px 18px;
+      z-index:1000;
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      gap:7px;
+      overflow-y:auto;
+      overflow-x:hidden;
+      border:0;
+      border-radius:0;
+      background:linear-gradient(180deg,#083f6a 0%,#0c568c 54%,#083b63 100%);
+      box-shadow:7px 0 24px rgba(8,53,88,.25);
+      transform:translateX(-105%);
+      transition:transform .22s ease;
+    }
+
+    body.mobile-menu-open .tab-bar{
+      transform:translateX(0);
+    }
+
+    .sidebar-head{
+      display:block;
+      color:#fff;
+      padding:5px 12px 18px;
+    }
+
+    .sidebar-title{
+      font-size:25px;
+      font-weight:800;
+      letter-spacing:-.03em;
+    }
+
+    .sidebar-subtitle{
+      margin-top:3px;
+      color:rgba(255,255,255,.68);
+      font-size:12px;
+    }
+
+    .tab-btn{
+      flex:none;
+      width:100%;
+      min-width:0;
+      min-height:52px;
+      padding:11px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:12px;
+      border:1px solid transparent;
+      border-radius:11px;
+      margin:0;
+      color:rgba(255,255,255,.86);
+      background:transparent;
+      text-align:left;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      font-size:15px;
+      font-weight:700;
+      text-transform:none;
+      letter-spacing:0;
+    }
+
+    .tab-btn:before{
+      width:27px;
+      flex:0 0 27px;
+      text-align:center;
+      font-size:19px;
+      opacity:.95;
+    }
+
+    #tab-btn-inicio:before{content:"⌂"}
+    #tab-btn-formularios:before{content:"▤"}
+    #tab-btn-historial:before{content:"♟"}
+    #tab-btn-casos:before{content:"▣"}
+
+    .tab-btn:hover{
+      color:#fff;
+      background:rgba(255,255,255,.09);
+    }
+
+    .tab-btn.active{
+      color:#fff;
+      background:rgba(255,255,255,.17);
+      border-color:rgba(255,255,255,.12);
+      box-shadow:inset 4px 0 0 #62c7ff;
+    }
+
+    .sidebar-divider{
+      display:block;
+      height:1px;
+      background:rgba(255,255,255,.16);
+      margin:8px 10px 3px;
+      flex:0 0 auto;
+    }
+
+    .sidebar-link{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      width:100%;
+      min-height:48px;
+      padding:10px 14px;
+      border:0;
+      border-radius:11px;
+      color:rgba(255,255,255,.80);
+      background:transparent;
+      text-decoration:none;
+      font:700 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      cursor:pointer;
+      text-align:left;
+      box-sizing:border-box;
+    }
+
+    .sidebar-link:hover{
+      color:#fff;
+      background:rgba(255,255,255,.08);
+    }
+
+    .sidebar-brand{
+      display:flex;
+      margin-top:auto;
+      padding:18px 10px 4px;
+      flex-direction:column;
+      align-items:flex-start;
+      color:rgba(255,255,255,.92);
+    }
+
+    .sidebar-brand img{
+      width:70px;
+      height:auto;
+      max-height:88px;
+      object-fit:contain;
+      margin-bottom:8px;
+    }
+
+    .sidebar-brand div{
+      font-size:10.5px;
+      line-height:1.35;
+      font-weight:750;
+    }
+
+    .sidebar-brand small{
+      margin-top:7px;
+      color:rgba(255,255,255,.55);
+      font-size:9.5px;
+    }
+
+    .sidebar-version{
+      padding:8px 10px 0;
+      color:rgba(255,255,255,.48);
+      font:10px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+
+    /* ===== CONTENIDO DEL TELÉFONO ===== */
+    main{
+      width:100%;
+      max-width:100%;
+      margin:0;
+      padding:14px 12px 30px;
+      min-height:0;
+      overflow-x:hidden;
+    }
+
+    .desktop-welcome{
+      display:none !important;
+    }
+
+    .tab-panel{
+      width:100%;
+      max-width:100%;
+      min-width:0;
+      overflow-x:hidden;
+    }
+
+    /* ===== INICIO ===== */
+    #tab-inicio{
+      width:100%;
+      max-width:100%;
+    }
+
+    .home-hero{
+      display:block;
+      width:100%;
+      min-height:250px;
+      margin:0 0 14px;
+      border-radius:14px;
+      overflow:hidden;
+      position:relative;
+      background:#fff url('hero-formapp.png') right bottom / auto 100% no-repeat;
+      box-shadow:0 5px 18px rgba(22,66,101,.06);
+    }
+
+    .home-hero:after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(
+        90deg,
+        rgba(255,255,255,.98) 0%,
+        rgba(255,255,255,.94) 48%,
+        rgba(255,255,255,.40) 78%,
+        rgba(255,255,255,0) 100%
+      );
+      pointer-events:none;
+    }
+
+    .home-hero-copy{
+      position:relative;
+      z-index:2;
+      width:100%;
+      max-width:100%;
+      padding:22px 18px;
+    }
+
+    .home-eyebrow{
+      font-size:10px;
+      margin-bottom:7px;
+    }
+
+    .home-hero h1{
+      font-size:27px;
+      line-height:1.15;
+      margin-bottom:8px;
+    }
+
+    .home-hero p{
+      font-size:13px;
+      line-height:1.5;
+      max-width:82%;
+    }
+
+    .home-disclaimer{
+      margin-top:11px;
+      font-size:10.5px;
+      line-height:1.4;
+      max-width:82%;
+    }
+
+    /* ===== BOTONES PRINCIPALES DEL INICIO ===== */
+    .home-feature-grid{
+      display:grid;
+      width:100%;
+      max-width:100%;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .home-feature{
+      min-width:0;
+      min-height:125px;
+      padding:14px;
+      border-radius:12px;
+    }
+
+    .home-feature .feature-icon{
+      width:38px;
+      height:38px;
+      font-size:19px;
+    }
+
+    .home-feature strong{
+      font-size:14px;
+    }
+
+    .home-feature small{
+      font-size:10.5px;
+      line-height:1.35;
+    }
+
+    .home-feature b{
+      width:27px;
+      height:27px;
+      font-size:16px;
+    }
+
+    /* Administración va SOLO en el menú lateral */
+    #home-admin-card{
+      display:none !important;
+    }
+
+    .home-lower-grid{
+      display:none !important;
+    }
+
+    .home-independent-strip{
+      display:none !important;
+    }
+
+    /* Evita que filtros/listados fuercen el ancho del teléfono */
+    .cards,
+    .hist-filters,
+    .hist-list,
+    #historial-lista,
+    #casos-lista{
+      max-width:100%;
+      min-width:0;
+    }
+
+    .hist-filters input,
+    .hist-filters select{
+      max-width:100%;
+    }
+  }
+
+.auth-pending{visibility:hidden}
+.auth-ready{visibility:visible}
+</style>
+</head>
+<body class="auth-pending">
+
+<a id="notif-btn" class="notif-btn" href="config.html" title="Cosas pendientes" aria-label="Cosas pendientes">
+  🔔<span id="notif-badge" class="badge"></span>
+</a>
+<div id="info-modal-overlay" class="info-modal-overlay">
+  <div class="info-modal">
+    <h3>Aviso legal</h3>
+    <p><strong>FormAPP es una aplicación independiente.</strong> No es un producto oficial de los Testigos de Jehová, de Watch Tower Bible and Tract Society, de sus sucursales, ni de ningún Comité de Enlace con los Hospitales de dicha organización. No está desarrollada, revisada, aprobada, patrocinada ni respaldada por esas entidades.</p>
+    <p>La aplicación se ofrece como una herramienta independiente para facilitar la gestión administrativa de un Comité de Enlace con los Hospitales, incluyendo el uso digital de formularios, el registro de médicos colaboradores y la organización de casos.</p>
+    <p>Cada comité utiliza su propia cuenta y su propia base de datos. La información que se carga en FormAPP se almacena en los servicios de datos configurados para ese comité y queda bajo la responsabilidad de sus administradores y usuarios. Los archivos adjuntos de los casos pueden almacenarse en el servicio de almacenamiento asociado a la aplicación.</p>
+    <p>Los usuarios son responsables de la exactitud, actualización, confidencialidad y uso adecuado de la información que ingresan, así como de administrar correctamente las cuentas y permisos de acceso del comité.</p>
+    <p>FormAPP no garantiza que la información ingresada sea correcta ni que sustituya los procedimientos, formularios o canales oficiales que correspondan. Ante cualquier duda, discrepancia o necesidad de validación, debe consultarse la fuente oficial correspondiente.</p>
+    <p>Los nombres, formatos y contenidos de formularios de terceros se utilizan únicamente para facilitar su identificación y gestión dentro de esta herramienta; los derechos sobre esos materiales corresponden a sus respectivos titulares.</p>
+    <p>La aplicación es independiente y de uso gratuito. No se autoriza cobrar por el acceso a FormAPP ni presentar la aplicación como un producto oficial de las entidades mencionadas.</p>
+    <p class="info-email">Sugerencias o errores técnicos: tusappasistente@gmail.com</p>
+    <button id="info-modal-close" class="info-modal-close">Entendido</button>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <button id="sidebar-toggle" class="sidebar-toggle topbar-toggle" type="button" aria-label="Cerrar menú" title="Cerrar menú">☰</button>
+    <div class="topbar-brand">
+      <div class="topbar-formapp">FormAPP</div>
+      <div class="topbar-caption">Gestión de formularios y registros</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="desktop-welcome" aria-label="Bienvenida a FormAPP">
+    <div class="welcome-copy">
+      <span class="welcome-eyebrow">FORMAPP · Gestión de formularios</span>
+      <h1>Bienvenido a FormAPP</h1>
+      <p>Una herramienta independiente para facilitar el trabajo administrativo del Comité de Enlace con los Hospitales: completar formularios, mantener el registro de médicos colaboradores y organizar los casos del comité.</p>
+      <div class="independent-badge">ℹ️ Aplicación independiente · No es una aplicación oficial de los Testigos de Jehová ni de su organización.</div>
+    </div>
+    <div class="welcome-actions">
+      <a href="hlc20_prototipo.html" class="quick-action primary"><span>HLC-20-S</span><small>Solicitud de alojamiento</small><b>→</b></a>
+      <a href="hlc07_prototipo.html" class="quick-action"><span>HLC-07-S</span><small>Hoja de trabajo</small><b>→</b></a>
+      <a href="hlc31_prototipo.html" class="quick-action"><span>HLC-31-S</span><small>Datos de contacto</small><b>→</b></a>
+    </div>
+  </section>
+  <div class="tab-bar">
+    <div class="sidebar-head">
+      <div class="sidebar-title">FormAPP</div>
+      <div class="sidebar-subtitle">Gestión del Comité</div>
+    </div>
+    <button class="tab-btn active" id="tab-btn-inicio" type="button">Inicio</button>
+    <button class="tab-btn" id="tab-btn-formularios" type="button">Formularios</button>
+    <button class="tab-btn" id="tab-btn-historial" type="button">Médicos colaboradores</button>
+    <button class="tab-btn" id="tab-btn-casos" type="button">Casos</button>
+    <a class="sidebar-link" id="sidebar-admin" href="config.html" style="display:none;">⚙️ <span>Administración</span></a>
+    <div class="sidebar-divider"></div>
+    <a class="sidebar-link" href="instrucciones.html">📖 <span>Instrucciones</span></a>
+    <button type="button" class="sidebar-link sidebar-legal" id="sidebar-aviso-legal">⚖️ <span>Aviso legal</span></button>
+    <button type="button" class="sidebar-link" id="sidebar-logout">↪️ <span>Cerrar sesión</span></button>
+    <div class="sidebar-brand">
+      <img src="logo-ceh.png" alt="Logo del Comité de Enlace con los Hospitales">
+      <div>Comité de Enlace<br>con los Hospitales</div>
+      <small>Aplicación independiente</small>
+      <div class="sidebar-version">FormAPP · versión 2.3</div>
+    </div>
+  </div>
+
+  <div id="tab-inicio" class="tab-panel active">
+  <section class="home-hero">
+    <div class="home-hero-copy">
+      <div class="home-eyebrow">FORMAPP · Aplicación independiente</div>
+      <h1>Bienvenido a FormAPP</h1>
+      <p>Una herramienta independiente para facilitar el trabajo administrativo del Comité de Enlace con los Hospitales: completar formularios, registrar médicos colaboradores y organizar el seguimiento de los casos.</p>
+      <div class="home-disclaimer"><strong>Importante:</strong> esta aplicación no es un producto oficial de los Testigos de Jehová ni de su organización, ni está desarrollada, revisada o respaldada por ella.</div>
+    </div>
+  </section>
+
+  <section class="home-feature-grid" aria-label="Accesos principales">
+    <button class="home-feature blue" data-home-tab="formularios"><span class="feature-icon">▤</span><strong>Formularios</strong><small>Completar y generar los formularios.</small><b>→</b></button>
+    <button class="home-feature teal" data-home-tab="historial"><span class="feature-icon">♟</span><strong>Médicos colaboradores</strong><small>Consultar y mantener el registro.</small><b>→</b></button>
+    <button class="home-feature purple" data-home-tab="casos"><span class="feature-icon">▣</span><strong>Casos</strong><small>Consultar casos y sus formularios.</small><b>→</b></button>
+    <button class="home-feature orange" data-home-tab="historial-dashboard"><span class="feature-icon">▥</span><strong>Dashboard</strong><small>Ver la distribución por zona y especialidad.</small><b>→</b></button>
+    <a class="home-feature navy" id="home-admin-card" href="config.html"><span class="feature-icon">⚙</span><strong>Administración</strong><small>Configurar catálogos y herramientas.</small><b>→</b></a>
+  </section>
+
+  <section class="home-lower-grid">
+    <div class="home-panel-card">
+      <div class="panel-heading"><span>⚡</span><h2>Acceso rápido</h2></div>
+      <div class="quick-grid">
+        <a href="hlc20_prototipo.html" class="quick-card blue"><span class="quick-icon">▤</span><span><strong>HLC-20-S</strong><small>Solicitud de alojamiento</small></span><b>→</b></a>
+        <a href="hlc07_prototipo.html" class="quick-card purple"><span class="quick-icon">▤</span><span><strong>HLC-07-S</strong><small>Hoja de trabajo</small></span><b>→</b></a>
+        <a href="hlc31_prototipo.html" class="quick-card teal"><span class="quick-icon">▤</span><span><strong>HLC-31-S</strong><small>Datos de contacto</small></span><b>→</b></a>
+      </div>
+    </div>
+
+    <div class="home-panel-card">
+      <div class="panel-heading"><span>📣</span><h2>Novedades</h2><button id="ver-novedades" type="button">Ver todas ›</button></div>
+      <div id="novedades-lista" class="news-list"><div class="news-loading">Cargando novedades...</div></div>
+    </div>
+  </section>
+
+  <div class="home-independent-strip">
+    <span class="strip-icon">ⓘ</span>
+    <div><strong>Aplicación independiente y no oficial.</strong> FormAPP fue creada por iniciativa propia para facilitar el uso digital de formularios y registros.</div>
+    <span class="strip-right">No es un sitio oficial.</span>
+  </div>
+</div>
+
+<div id="tab-formularios" class="tab-panel">
+  <h2 class="section-title">Formularios disponibles</h2>
+  <div class="cards">
+    <a class="card form-card" href="hlc20_prototipo.html">
+      <span class="code">hlc-20-S</span>
+      <span class="info">
+        <span class="name">Solicitud de alojamiento</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+    <a class="card form-card" href="hlc07_prototipo.html">
+      <span class="code">hlc-07-S</span>
+      <span class="info">
+        <span class="name">Hoja de trabajo</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+    <a class="card form-card" href="hlc31_prototipo.html">
+      <span class="code">hlc-31-S</span>
+      <span class="info">
+        <span class="name">Datos de contacto</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+  </div>
+
+  </div>
+
+  <div id="tab-historial" class="tab-panel">
+  <h2 class="section-title">Médicos colaboradores</h2>
+
+  <div class="hist-view-toggle">
+    <button type="button" id="ver-buscador" class="filter-chip active">🔎 Buscador</button>
+    <button type="button" id="ver-lista" class="filter-chip">📋 Lista</button>
+    <button type="button" id="ver-dashboard" class="filter-chip">📊 Dashboard</button>
+  </div>
+
+  <div id="vista-buscador">
+    <div class="hist-filters">
+      <input type="text" id="buscador-medico-nombre" placeholder="Nombre o apellido...">
+      <select id="buscador-medico-especialidad"><option value="">Todas las especialidades</option></select>
+      <input type="text" id="buscador-medico-ciudad" placeholder="Ciudad / localidad...">
+      <select id="buscador-medico-zona"><option value="">Todas las zonas</option></select>
+      <input type="text" id="buscador-medico-hospital" placeholder="Hospital / institución...">
+    </div>
+    <div id="buscador-medico-resultados"></div>
+  </div>
+
+  <div id="vista-lista" style="display:none;">
+  <div class="hist-filters">
+    <input type="text" id="hist-search" placeholder="Buscar por apellido o nombre...">
+    <input type="text" id="hist-ciudad" placeholder="Localidad...">
+    <select id="hist-zona"><option value="">Todas las zonas</option></select>
+    <input type="text" id="hist-sector" placeholder="Hospital / Sector (CEH)...">
+    <select id="hist-especialidad"><option value="">Todas las especialidades</option></select>
+    <select id="hist-tipo-colaboracion"><option value="">Consultor / Colaborador / No</option><option value="Consultor">Consultor</option><option value="Colaborador">Colaborador</option><option value="No">No</option></select>
+    <select id="hist-estado"><option value="">Todos los estados</option><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select>
+  </div>
+  <div id="hist-total-registros" style="font:600 12px -apple-system,sans-serif;color:#6b756f;margin:8px 0 10px;"></div>
+    <div id="hist-hlc-31-S" class="hist-container"></div>
+
+  <div class="privacy-note">
+    🔒 Esta lista es el registro compartido del comité (Supabase), visible para el resto de los miembros aprobados. Los expedientes de pacientes (hlc-20-S / hlc-07-S) se ven ahora en la pestaña "Casos". Las herramientas de plantilla, importación y exportación por Excel se movieron al ⚙ Panel de administración.
+  </div>
+  </div>
+
+  <div id="vista-dashboard" style="display:none;">
+    <p class="dash-intro">Médicos colaboradores activos agrupados por <strong>Zona → Especialidad</strong>.</p>
+    <div id="dashboard-tabla"></div>
+  </div>
+
+  </div>
+
+  <div id="tab-casos" class="tab-panel">
+  <h2 class="section-title">Casos</h2>
+  <div class="hist-filters">
+    <input type="text" id="casos-search" placeholder="Buscar por nombre...">
+  </div>
+  <div class="filters" id="casos-filtros">
+    <button class="filter-chip active" data-estado="todos">Todos</button>
+    <button class="filter-chip" data-estado="Activo">Activo</button>
+    <button class="filter-chip" data-estado="En seguimiento">En seguimiento</button>
+    <button class="filter-chip" data-estado="Cerrado">Cerrado</button>
+  </div>
+  <div class="lista" id="casos-lista">
+    <div class="vacio">Cargando casos...</div>
+  </div>
+  </div>
+  <p style="text-align:center; font-family:-apple-system,sans-serif; font-size:11px; color:#8a8375; margin-top:26px;">FormAPP · versión 2.3</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://abchojqugeywrzqktgpm.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2hvanF1Z2V5d3J6cWt0Z3BtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2NjkyMTMsImV4cCI6MjEwMzI0NTIxM30.VjbcoWi-F3QwN5tTjmmO6mcMhZVdSI_6X7qdxoK694E";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// SEGURIDAD: el menú es una zona privada. Si alguien entra directamente por URL
+// sin una sesión válida, vuelve a la pantalla de acceso.
+(async function protegerMenu(){
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      document.body.classList.remove('auth-pending');
+      const destino = location.pathname.split('/').pop() + location.search;
+      location.replace('index.html?redirect=' + encodeURIComponent(destino));
+      return;
+    }
+    const { data: perfil } = await sb.from('profiles').select('nombre, apellido, aprobado').eq('id', session.user.id).single();
+    if (!perfil || !perfil.aprobado) {
+      document.body.classList.remove('auth-pending');
+      await sb.auth.signOut();
+      location.replace('index.html');
+      return;
+    }
+    const nombre = [perfil.nombre, perfil.apellido].filter(Boolean).join(' ').trim() || session.user.email || 'Usuario';
+    const el = document.getElementById('logged-user');
+    if (el) el.textContent = nombre;
+    document.body.classList.remove('auth-pending');
+    document.body.classList.add('auth-ready');
+  } catch (e) {
+    document.body.classList.remove('auth-pending');
+    console.error('No se pudo validar la sesión:', e);
+    location.replace('index.html');
+  }
+})();
+
+(function configurarMenuLateralPC() {
+  const legal = document.getElementById('sidebar-aviso-legal');
+  const infoOverlay = document.getElementById('info-modal-overlay');
+  if (legal && infoOverlay) {
+    legal.addEventListener('click', () => infoOverlay.classList.add('open'));
+  }
+})();
+
+(async function ocultarPanelSiNoEsAdminYMostrarAlertas() {
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+
+    const { data: perfil } = await sb.from('profiles').select('es_admin').eq('id', user.id).single();
+
+    const sidebarAdmin = document.getElementById('sidebar-admin');
+    if (sidebarAdmin) sidebarAdmin.style.display = perfil?.es_admin ? 'flex' : 'none';
+
+    if (!perfil || !perfil.es_admin) {
+      const cardAdmin = document.getElementById('home-admin-card');
+      if (cardAdmin) cardAdmin.style.display = 'none';
+      return;
+    }
+
+    // Es admin: contamos solo tareas que realmente requieren una acción de este administrador.
+    // Los usuarios bloqueados no cuentan como pendientes y una propuesta ya confirmada por
+    // este administrador tampoco debe volver a generar una alerta.
+    const { count: countAprobar } = await sb.from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('aprobado', false)
+      .eq('bloqueado', false);
+
+    const { data: solicitudesPendientes } = await sb.from('solicitudes_admin')
+      .select('id, confirmaciones')
+      .eq('estado', 'pendiente');
+
+    const solicitudesParaMi = (solicitudesPendientes || []).filter(solicitud =>
+      !Array.isArray(solicitud.confirmaciones) || !solicitud.confirmaciones.includes(user.id)
+    );
+    const total = (countAprobar || 0) + solicitudesParaMi.length;
+
+    if (total > 0) {
+      const notifBtn = document.getElementById('notif-btn');
+      const badge = document.getElementById('notif-badge');
+      badge.textContent = total > 9 ? '9+' : String(total);
+      notifBtn.style.display = 'flex';
+    }
+  } catch (e) {
+    console.warn('No se pudo verificar si el usuario es admin:', e);
+  }
+})();
+</script>
+
+<script>
+// --- Médicos colaboradores (antes "Historial"): ahora es solo hlc-31-S, guardado en
+// "registros_hlc31". Los expedientes de pacientes (hlc-20/07) se ven en la pestaña "Casos".
+const BUCKET_ADJUNTOS = 'casos-adjuntos';
+const FORM_FILES = { 'hlc-31-S': 'hlc31_prototipo.html' };
+
+// Catálogos compartidos con HLC31 / Supabase. Los IDs se mantienen porque HLC31 guarda el id de especialidad.
+let ESPECIALIDADES = [];
+let ZONAS = [];
+
+async function cargarCatalogosMenu() {
+  const [{ data: zonas, error: zonasError }, { data: especialidades, error: espError }] = await Promise.all([
+    sb.from('zonas').select('id,nombre').eq('activa', true).order('nombre'),
+    sb.from('especialidades').select('id,nombre').eq('activa', true).order('nombre')
+  ]);
+  if (zonasError) console.warn('No se pudo cargar zonas:', zonasError.message);
+  if (espError) console.warn('No se pudo cargar especialidades:', espError.message);
+  ZONAS = zonas || [];
+  ESPECIALIDADES = especialidades || [];
+
+  const zonaSelect = document.getElementById('hist-zona');
+  if (zonaSelect) zonaSelect.insertAdjacentHTML('beforeend', ZONAS.map(z => `<option value="${String(z.id)}">${escMenu(z.nombre)}</option>`).join(''));
+  const espSelect = document.getElementById('hist-especialidad');
+  if (espSelect) espSelect.insertAdjacentHTML('beforeend', ESPECIALIDADES.map(e => `<option value="${String(e.id)}">${escMenu(e.nombre)}</option>`).join(''));
+}
+function escMenu(v) { const d=document.createElement('div'); d.textContent=v ?? ''; return d.innerHTML; }
+let historialCache = [];
+
+function especialidadLabel(valor) {
+  if (!valor) return '';
+  const encontrada = ESPECIALIDADES.find(e => String(e.id) === String(valor));
+  return encontrada ? encontrada.nombre : valor;
+}
+function zonaLabel(valor) {
+  if (!valor) return '';
+  const encontrada = ZONAS.find(z => String(z.id) === String(valor));
+  return encontrada ? encontrada.nombre : valor;
+}
+
+function fmtFecha(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+         ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function cargarHistorial() {
+  document.getElementById('hist-hlc-31-S').innerHTML = '<div class="empty-state">Cargando todos los médicos...</div>';
+
+  // Supabase/PostgREST puede devolver resultados paginados. Aunque hoy tengamos
+  // menos de 100 médicos, cargamos por bloques para que el historial nunca quede
+  // truncado por un límite de filas del servidor.
+  const todas = [];
+  const TAM_BLOQUE = 500;
+  let desde = 0;
+  while (true) {
+    const { data, error } = await sb.from('registros_hlc31')
+      .select('id, fecha, datos, nombre_original, ruta_storage, estado, tipo_colaboracion')
+      .order('fecha', { ascending: false })
+      .range(desde, desde + TAM_BLOQUE - 1);
+    if (error) {
+      document.getElementById('hist-hlc-31-S').innerHTML = `<div class="empty-state">No se pudo cargar: ${error.message}</div>`;
+      return;
+    }
+    const bloque = data || [];
+    todas.push(...bloque);
+    if (bloque.length < TAM_BLOQUE) break;
+    desde += TAM_BLOQUE;
+  }
+
+  historialCache = todas.map(r => {
+    const d = r.datos || {};
+    const nombre = [d['900_10_Text_SanSerif'], d['900_11_Text_SanSerif']].filter(Boolean).join(' ').trim();
+    return {
+      id: r.id,
+      tipo: 'hlc-31-S',
+      apellido: d['900_11_Text_SanSerif'] || '',
+      nombreSolo: d['900_10_Text_SanSerif'] || '',
+      label: nombre || r.nombre_original || '(sin nombre)',
+      telefono: d['900_12_Text_SanSerif'] || d['900_13_Text_SanSerif'] || '',
+      ciudad: d['900_19_Text_SanSerif'] || '',
+      zona: d['sector_zona_ceh'] || '',
+      hospitalSectorCeh: d['hospital_sector_ceh'] || '',
+      diasHospital: ['lunes','martes','miercoles','jueves','viernes','sabado','domingo']
+        .filter(dia => d['dias_trabajo_hospital_' + dia] === true || String(d['dias_trabajo_hospital_' + dia] || '').toLowerCase() === 'true'),
+      // Estado/tipo de colaboración: columnas reales; se admite el jsonb como respaldo
+      // por si quedara algún registro viejo cargado antes de esta actualización.
+      estado: r.estado || d['estado_medico'] || '',
+      tipoRelacion: r.tipo_colaboracion || d['tipo_relacion_ceh'] || '',
+      especialidades: [d['900_24_HLC_Skills'], d['900_25_HLC_Skills'], d['900_26_HLC_Skills']].filter(Boolean),
+      subespecialidades: [d['900_27_HLC_Skills'], d['900_28_HLC_Skills'], d['900_29_HLC_Skills']].filter(Boolean),
+      date: r.fecha,
+      formFile: FORM_FILES['hlc-31-S'],
+      filename: r.nombre_original,
+      rutaStorage: r.ruta_storage,
+      bucket: BUCKET_ADJUNTOS,
+      datosCompletos: d
+    };
+  });
+  const contador = document.getElementById('hist-total-registros');
+  if (contador) {
+    let texto = `<strong>Total de médicos en la base de datos: ${historialCache.length}</strong>`;
+    try {
+      const ultimaImportacion = JSON.parse(localStorage.getItem('formapp_ultima_importacion_medicos') || 'null');
+      if (ultimaImportacion && ultimaImportacion.fecha) {
+        const fecha = new Date(ultimaImportacion.fecha);
+        const fechaTexto = isNaN(fecha.getTime()) ? '' : fecha.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'}) + ' ' + fecha.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+        texto += `<br><span style="font-weight:500;color:#6b756f;">Última importación${fechaTexto ? ' (' + fechaTexto + ')' : ''}: ${Number(ultimaImportacion.creados || 0)} nuevos, ${Number(ultimaImportacion.yaExistian || 0)} ya estaban cargados${Number(ultimaImportacion.saltadas || 0) ? ', ' + Number(ultimaImportacion.saltadas || 0) + ' no importados' : ''}.</span>`;
+      }
+    } catch (_) {}
+    contador.innerHTML = texto;
+  }
+  render();
+  renderDashboard();
+}
+
+function render() {
+  const busqueda = (document.getElementById('hist-search').value || '').trim().toLowerCase();
+  const ciudadFiltro = (document.getElementById('hist-ciudad').value || '').trim().toLowerCase();
+  const zonaFiltro = document.getElementById('hist-zona').value;
+  const sectorFiltro = (document.getElementById('hist-sector').value || '').trim().toLowerCase();
+  const especialidadFiltro = document.getElementById('hist-especialidad').value;
+  const tipoColabFiltro = document.getElementById('hist-tipo-colaboracion').value;
+  const estadoFiltro = document.getElementById('hist-estado').value;
+  const container = document.getElementById('hist-hlc-31-S');
+
+  // Todos los filtros se combinan con AND: sector + zona/hospital + estado + tipo de
+  // colaboración, etc. muestran únicamente los médicos que cumplen todas las condiciones.
+  const items = historialCache.filter(r => {
+    if (busqueda && !((r.label || '').toLowerCase().includes(busqueda) || (r.filename || '').toLowerCase().includes(busqueda))) return false;
+    if (ciudadFiltro && !(r.ciudad || '').toLowerCase().includes(ciudadFiltro)) return false;
+    if (zonaFiltro) {
+      // La zona puede estar guardada en registros antiguos como ID o como nombre.
+      // El selector usa el ID del catálogo, por eso aceptamos ambas representaciones.
+      const zonaRegistro = String(r.zona || '').trim().toLowerCase();
+      const zonaCatalogo = ZONAS.find(z => String(z.id) === String(zonaFiltro));
+      const zonaNombre = String(zonaCatalogo?.nombre || '').trim().toLowerCase();
+      const zonaId = String(zonaFiltro).trim().toLowerCase();
+
+      if (zonaRegistro !== zonaId && zonaRegistro !== zonaNombre) return false;
+    }
+    if (sectorFiltro && !(r.hospitalSectorCeh || '').toLowerCase().includes(sectorFiltro)) return false;
+    if (especialidadFiltro && !r.especialidades.some(e => String(e) === String(especialidadFiltro))) return false;
+    if (tipoColabFiltro && r.tipoRelacion !== tipoColabFiltro) return false;
+    if (estadoFiltro && r.estado !== estadoFiltro) return false;
+    return true;
+  });
+
+  if (historialCache.length === 0) {
+    container.innerHTML = '<div class="empty-state">Todavía no hay ningún médico colaborador cargado.</div>';
+    return;
+  }
+  if (items.length === 0) {
+    container.innerHTML = '<div class="no-match">Ningún resultado con ese filtro.</div>';
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'hist-list';
+  items.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'hist-item';
+    item.innerHTML = `
+      <span class="hinfo">
+        <span class="hname">${r.label}${r.estado === 'Inactivo' ? ' · <span style="color:#8a3b2b;">Inactivo</span>' : ''}</span><br>
+        <span class="hdate">${[especialidadLabel(r.especialidades[0]), zonaLabel(r.zona), r.ciudad, r.telefono, r.hospitalSectorCeh, r.tipoRelacion].filter(Boolean).join(' · ')}${[especialidadLabel(r.especialidades[0]), zonaLabel(r.zona), r.ciudad, r.telefono, r.hospitalSectorCeh, r.tipoRelacion].some(Boolean) ? ' · ' : ''}${fmtFecha(r.date)}</span>
+      </span>
+      <span class="hbtns">
+        <span class="hist-item-actions">
+          <button type="button" class="hist-item-menu-btn" aria-label="Acciones de ${r.label}" aria-expanded="false" title="Acciones">⋮</button>
+          <span class="hist-item-menu">
+            <button type="button" class="hist-item-editar" data-action="editar" data-id="${r.id}" data-file="${r.formFile || 'hlc31_prototipo.html'}" title="Editar">
+              ✏️ <span>Editar</span>
+            </button>
+            <button type="button" class="hist-item-compartir" data-action="compartir" data-id="${r.id}" title="Compartir">
+              ↗ <span>Compartir</span>
+            </button>
+            <button type="button" class="hist-item-borrar" data-action="delete" data-id="${r.id}" title="Borrar">
+              🗑️ <span>Borrar</span>
+            </button>
+          </span>
+        </span>
+      </span>
+    `;
+    list.appendChild(item);
+  });
+  container.innerHTML = '';
+  container.appendChild(list);
+
+  container.querySelectorAll('.hist-item-menu-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const actions = btn.closest('.hist-item-actions');
+      const abierto = actions.classList.toggle('open');
+      btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+      container.querySelectorAll('.hist-item-actions.open').forEach(other => {
+        if (other !== actions) {
+          other.classList.remove('open');
+          const otherBtn = other.querySelector('.hist-item-menu-btn');
+          if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  });
+
+  container.querySelectorAll('button[data-action]').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      if (btn.dataset.action) {
+        const actions = btn.closest('.hist-item-actions');
+        if (actions) {
+          actions.classList.remove('open');
+          const menuBtn = actions.querySelector('.hist-item-menu-btn');
+          if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+        }
+      }
+    });
+  });
+
+  container.querySelectorAll('button[data-action="editar"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      location.href = btn.dataset.file + '?editar=' + encodeURIComponent(btn.dataset.id);
+    });
+  });
+  container.querySelectorAll('button[data-action="compartir"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // El formulario HLC31 ya contiene la lógica completa: si hay PDF lo usa;
+      // si no hay ruta_storage, genera el PDF desde registros_hlc31 y lo guarda.
+      const id = btn.dataset.id;
+      if (!id) return;
+      location.href = 'hlc31_prototipo.html?compartir=' + encodeURIComponent(id);
+    });
+  });
+  container.querySelectorAll('button[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const r = historialCache.find(x => x.id === btn.dataset.id);
+      const nombre = r ? r.label : 'este registro';
+      if (!confirm(`¿Borrar el registro de "${nombre}"? Esta acción no se puede deshacer.`)) return;
+      try {
+        if (r.rutaStorage) await sb.storage.from(r.bucket).remove([r.rutaStorage]);
+        await sb.from('registros_hlc31').delete().eq('id', r.id);
+        await cargarCatalogosMenu().then(() => cargarHistorial());
+      } catch (e) {
+        alert('No se pudo borrar: ' + e.message);
+      }
+    });
+  });
+}
+
+// se movieron al Panel de administración (config.html) por ser funciones de configuración
+// y administración masiva de datos, no de uso cotidiano. Ver ese archivo para esa lógica.
+
+// --- Dashboard: matriz Zona × Especialidad, con cantidades y semáforo ---
+function renderDashboard() {
+  const cont = document.getElementById('dashboard-tabla');
+  if (!cont) return;
+
+  // La fuente del Dashboard es SIEMPRE la base de datos cargada en la app.
+  // Se incluyen todos los registros activos con colaboración Consultor/Colaborador,
+  // pero solo se contabilizan especialidades que existen en el catálogo activo.
+  const activos = historialCache.filter(r => {
+    const estado = String(r.estado || '').trim().toLowerCase();
+    const tipo = String(r.tipoRelacion || '').trim().toLowerCase();
+    return estado !== 'inactivo' && tipo !== 'no';
+  });
+  const zonas = ZONAS.slice().sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
+  const especialidades = ESPECIALIDADES.slice().sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
+  const zonaPorClave = new Map();
+  zonas.forEach(z => {
+    zonaPorClave.set(String(z.id).trim().toLowerCase(), String(z.id));
+    zonaPorClave.set(String(z.nombre).trim().toLowerCase(), String(z.id));
+  });
+  const espPorClave = new Map();
+  especialidades.forEach(e => {
+    espPorClave.set(String(e.id).trim().toLowerCase(), String(e.id));
+    espPorClave.set(String(e.nombre).trim().toLowerCase(), String(e.id));
+  });
+
+  if (!zonas.length) {
+    cont.innerHTML = '<div class="empty-state">No hay Zonas activas configuradas.</div>';
+    return;
+  }
+  if (!especialidades.length) {
+    cont.innerHTML = '<div class="empty-state">No hay especialidades activas configuradas.</div>';
+    return;
+  }
+
+  // Una celda = una combinación Zona + Especialidad. Se guardan los médicos
+  // correspondientes para que la celda sea realmente navegable.
+  const celdas = new Map();
+  activos.forEach(r => {
+    const zonaClave = String(r.zona || '').trim().toLowerCase();
+    const zonaId = zonaPorClave.get(zonaClave);
+    if (!zonaId) return;
+    (r.especialidades || []).forEach(valorEsp => {
+      const espClave = String(valorEsp || '').trim().toLowerCase();
+      const espId = espPorClave.get(espClave);
+      // Si dice Director, Abogado, Enfermería, Jefa UCI, etc., no está en el
+      // catálogo de especialidades y por diseño no entra en la matriz.
+      if (!espId) return;
+      const clave = zonaId + '|' + espId;
+      if (!celdas.has(clave)) celdas.set(clave, []);
+      const lista = celdas.get(clave);
+      if (!lista.some(x => String(x.id) === String(r.id))) lista.push(r);
+    });
+  });
+
+  let html = '<div class="dash-scroll"><table class="dash-tabla"><thead><tr>';
+  html += '<th class="dash-especialidad-head">Especialidad</th>';
+  zonas.forEach(z => {
+    html += `<th class="dash-zona-head">${escMenu(z.nombre)}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  especialidades.forEach(esp => {
+    html += `<tr><th scope="row" class="dash-especialidad">${escMenu(esp.nombre)}</th>`;
+    zonas.forEach(z => {
+      const clave = String(z.id) + '|' + String(esp.id);
+      const medicos = celdas.get(clave) || [];
+      const cantidad = medicos.length;
+      const clase = cantidad > 0 ? 'dash-si' : 'dash-no';
+      const nombres = medicos.map(m => m.label).join(', ');
+      const titulo = cantidad === 1 ? `Abrir ${medicos[0].label}` :
+        cantidad > 1 ? `Ver ${cantidad} médicos: ${nombres}` : 'Sin médicos en esta combinación';
+      html += `<td class="dash-celda ${clase}" data-zona-id="${escMenu(z.id)}" data-esp-id="${escMenu(esp.id)}" title="${escMenu(titulo)}" role="button" tabindex="0" aria-label="${escMenu(esp.nombre)} en ${escMenu(z.nombre)}: ${cantidad} médico${cantidad === 1 ? '' : 's'}">${cantidad}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  cont.innerHTML = html;
+
+  const abrirCelda = (celda) => {
+    const zonaId = String(celda.dataset.zonaId || '');
+    const espId = String(celda.dataset.espId || '');
+    const clave = zonaId + '|' + espId;
+    const medicos = celdas.get(clave) || [];
+    if (!medicos.length) return;
+
+    if (medicos.length === 1) {
+      // Un solo médico: abrir directamente su Formulario 31 en modo edición.
+      const m = medicos[0];
+      if (m.formFile) {
+        window.location.href = m.formFile + '?editar=' + encodeURIComponent(m.id);
+        return;
+      }
+    }
+
+    // Varios médicos: mostrar un selector con todos los que corresponden a la celda.
+    mostrarMedicosDeCelda(medicos);
+  };
+
+  cont.querySelectorAll('.dash-celda').forEach(celda => {
+    celda.addEventListener('click', () => abrirCelda(celda));
+    celda.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        abrirCelda(celda);
+      }
+    });
+  });
+}
+
+function mostrarMedicosDeCelda(medicos) {
+  let modal = document.getElementById('dashboard-medicos-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'dashboard-medicos-modal';
+    modal.className = 'dash-modal-backdrop';
+    document.body.appendChild(modal);
+  }
+
+  modal.innerHTML = `
+    <div class="dash-modal" role="dialog" aria-modal="true" aria-labelledby="dash-modal-title">
+      <div class="dash-modal-head">
+        <strong id="dash-modal-title">Médicos de esta celda</strong>
+        <button type="button" class="dash-modal-close" aria-label="Cerrar">×</button>
+      </div>
+      <div class="dash-modal-body">
+        ${medicos.map(m => `
+          <button type="button" class="dash-medico-opcion" data-id="${escMenu(m.id)}" data-file="${escMenu(m.formFile || '')}">
+            <span>${escMenu(m.label)}</span>
+            <small>${escMenu(especialidadLabel((m.especialidades || [])[0]))}</small>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+
+  const cerrar = () => { modal.style.display = 'none'; };
+  modal.querySelector('.dash-modal-close').addEventListener('click', cerrar);
+  modal.addEventListener('click', e => { if (e.target === modal) cerrar(); });
+  modal.querySelectorAll('.dash-medico-opcion').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.file) window.location.href = btn.dataset.file + '?editar=' + encodeURIComponent(btn.dataset.id);
+    });
+  });
+}
+
+function normalizarTextoBuscadorMedicos(valor) {
+  return String(valor || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function valorCatalogoCoincide(valorRegistro, catalogo, valorSeleccionado) {
+  if (!valorSeleccionado) return true;
+  const encontrado = catalogo.find(x => String(x.id) === String(valorSeleccionado));
+  const registro = normalizarTextoBuscadorMedicos(valorRegistro);
+  if (!encontrado) return registro === normalizarTextoBuscadorMedicos(valorSeleccionado);
+  return registro === normalizarTextoBuscadorMedicos(encontrado.id) ||
+         registro === normalizarTextoBuscadorMedicos(encontrado.nombre);
+}
+
+function diasHospitalLabel(dias) {
+  const nombres = { lunes:'lunes', martes:'martes', miercoles:'miércoles', jueves:'jueves', viernes:'viernes', sabado:'sábado', domingo:'domingo' };
+  return (dias || []).map(d => nombres[d] || d).join(' · ');
+}
+
+function cargarFiltrosBuscadorMedicos() {
+  const zonaSelect = document.getElementById('buscador-medico-zona');
+  const espSelect = document.getElementById('buscador-medico-especialidad');
+  if (zonaSelect) zonaSelect.insertAdjacentHTML('beforeend', ZONAS.map(z => `<option value="${String(z.id)}">${escMenu(z.nombre)}</option>`).join(''));
+  if (espSelect) espSelect.insertAdjacentHTML('beforeend', ESPECIALIDADES.map(e => `<option value="${String(e.id)}">${escMenu(e.nombre)}</option>`).join(''));
+}
+
+function renderBuscadorMedicos() {
+  const cont = document.getElementById('buscador-medico-resultados');
+  if (!cont) return;
+
+  const nombre = normalizarTextoBuscadorMedicos(document.getElementById('buscador-medico-nombre')?.value);
+  const especialidad = document.getElementById('buscador-medico-especialidad')?.value || '';
+  const ciudad = normalizarTextoBuscadorMedicos(document.getElementById('buscador-medico-ciudad')?.value);
+  const zona = document.getElementById('buscador-medico-zona')?.value || '';
+  const hospital = normalizarTextoBuscadorMedicos(document.getElementById('buscador-medico-hospital')?.value);
+
+  const items = historialCache.filter(r => {
+    if (nombre && !normalizarTextoBuscadorMedicos(r.label).includes(nombre)) return false;
+    if (especialidad && !(r.especialidades || []).some(e => valorCatalogoCoincide(e, ESPECIALIDADES, especialidad))) return false;
+    if (ciudad && !normalizarTextoBuscadorMedicos(r.ciudad).includes(ciudad)) return false;
+    if (zona && !valorCatalogoCoincide(r.zona, ZONAS, zona)) return false;
+    if (hospital && !normalizarTextoBuscadorMedicos(r.hospitalSectorCeh).includes(hospital)) return false;
+    return true;
+  });
+
+  if (!historialCache.length) {
+    cont.innerHTML = '<div class="buscador-medico-vacio">Todavía no hay médicos colaboradores registrados.</div>';
+    return;
+  }
+  if (!items.length) {
+    cont.innerHTML = '<div class="buscador-medico-vacio">Ningún médico coincide con los filtros seleccionados.</div>';
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  items.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'buscador-medico-card';
+    const especialidades = (r.especialidades || []).map(especialidadLabel).filter(Boolean).join(' · ');
+    const dias = diasHospitalLabel(r.diasHospital);
+    const telefono = String(r.telefono || '').trim();
+
+    const nombreEl = document.createElement('div');
+    nombreEl.className = 'buscador-medico-nombre';
+    nombreEl.textContent = r.label || '(sin nombre)';
+    card.appendChild(nombreEl);
+
+    [[especialidades,'Especialidad: '],[r.hospitalSectorCeh,'Hospital: '],[r.ciudad,'Ciudad: '],[dias,'Días: '],[telefono,'Teléfono: ']].forEach(([valor,etiqueta]) => {
+      if (!valor) return;
+      const el=document.createElement('div');
+      el.className='buscador-medico-dato';
+      el.textContent=etiqueta+valor;
+      card.appendChild(el);
+    });
+
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='buscador-medico-whatsapp';
+    btn.textContent='🟢 Compartir por WhatsApp';
+    btn.addEventListener('click', () => {
+      const texto=[
+        'Médico colaborador: '+(r.label || ''),
+        especialidades?'Especialidad: '+especialidades:'',
+        r.hospitalSectorCeh?'Hospital: '+r.hospitalSectorCeh:'',
+        r.ciudad?'Ciudad: '+r.ciudad:'',
+        dias?'Días: '+dias:'',
+        telefono?'Teléfono: '+telefono:''
+      ].filter(Boolean).join('\n');
+      window.open('https://wa.me/?text='+encodeURIComponent(texto),'_blank');
+    });
+    card.appendChild(btn);
+    frag.appendChild(card);
+  });
+  cont.replaceChildren(frag);
+}
+
+(function vistaHistorialToggle() {
+  const btnBuscador=document.getElementById('ver-buscador');
+  const btnLista=document.getElementById('ver-lista');
+  const btnDashboard=document.getElementById('ver-dashboard');
+  const vistaBuscador=document.getElementById('vista-buscador');
+  const vistaLista=document.getElementById('vista-lista');
+  const vistaDashboard=document.getElementById('vista-dashboard');
+  if (!btnBuscador || !btnLista || !btnDashboard) return;
+
+  const activarVista=vista => {
+    [btnBuscador,btnLista,btnDashboard].forEach(btn=>btn.classList.remove('active'));
+    vistaBuscador.style.display=vista==='buscador'?'':'none';
+    vistaLista.style.display=vista==='lista'?'':'none';
+    vistaDashboard.style.display=vista==='dashboard'?'':'none';
+    if (vista==='buscador') {
+      btnBuscador.classList.add('active');
+      renderBuscadorMedicos();
+    } else if (vista==='lista') {
+      btnLista.classList.add('active');
+    } else {
+      btnDashboard.classList.add('active');
+      cargarHistorial().then(() => renderDashboard());
+    }
+  };
+
+  btnBuscador.addEventListener('click',()=>activarVista('buscador'));
+  btnLista.addEventListener('click',()=>activarVista('lista'));
+  btnDashboard.addEventListener('click',()=>activarVista('dashboard'));
+})();
+
+cargarCatalogosMenu().then(() => {
+  cargarFiltrosBuscadorMedicos();
+  return cargarHistorial();
+});
+
+document.getElementById('buscador-medico-nombre').addEventListener('input', renderBuscadorMedicos);
+document.getElementById('buscador-medico-especialidad').addEventListener('change', renderBuscadorMedicos);
+document.getElementById('buscador-medico-ciudad').addEventListener('input', renderBuscadorMedicos);
+document.getElementById('buscador-medico-zona').addEventListener('change', renderBuscadorMedicos);
+document.getElementById('buscador-medico-hospital').addEventListener('input', renderBuscadorMedicos);
+
+document.getElementById('hist-search').addEventListener('input', render);
+document.getElementById('hist-zona').addEventListener('change', render);
+document.getElementById('hist-ciudad').addEventListener('input', render);
+document.getElementById('hist-sector').addEventListener('input', render);
+document.getElementById('hist-especialidad').addEventListener('change', render);
+document.getElementById('hist-tipo-colaboracion').addEventListener('change', render);
+document.getElementById('hist-estado').addEventListener('change', render);
+
+(function tabs() {
+  const btns = {
+    inicio: document.getElementById('tab-btn-inicio'),
+    formularios: document.getElementById('tab-btn-formularios'),
+    historial: document.getElementById('tab-btn-historial'),
+    casos: document.getElementById('tab-btn-casos')
+  };
+  const panels = {
+    inicio: document.getElementById('tab-inicio'),
+    formularios: document.getElementById('tab-formularios'),
+    historial: document.getElementById('tab-historial'),
+    casos: document.getElementById('tab-casos')
+  };
+  let casosCargados = false;
+
+  function ir(nombre) {
+    Object.keys(btns).forEach(k => {
+      btns[k].classList.toggle('active', k === nombre);
+      panels[k].classList.toggle('active', k === nombre);
+    });
+    if (nombre === 'casos' && !casosCargados) {
+      casosCargados = true;
+      cargarCasos();
+    }
+  }
+
+  btns.inicio.addEventListener('click', () => ir('inicio'));
+  btns.formularios.addEventListener('click', () => ir('formularios'));
+  btns.historial.addEventListener('click', () => ir('historial'));
+  btns.casos.addEventListener('click', () => ir('casos'));
+
+  // Se expone para poder abrir la pestaña inicial recién al final del script,
+  // una vez que cargarCasos() (definida más abajo) ya existe. Antes se llamaba
+  // acá mismo y, si la URL traía ?tab=casos, explotaba con "cargarCasos is not
+  // defined" porque esa función todavía no se había cargado.
+  window.irTabInicial = () => {
+    const tabInicial = new URLSearchParams(location.search).get('tab');
+    if (tabInicial && panels[tabInicial]) ir(tabInicial);
+  };
+})();
+
+// Accesos de la pantalla Inicio.
+document.querySelectorAll('[data-home-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const destino = btn.dataset.homeTab;
+    if (destino === 'historial-dashboard') {
+      document.getElementById('tab-btn-historial').click();
+      setTimeout(() => document.getElementById('ver-dashboard')?.click(), 0);
+    } else {
+      document.getElementById('tab-btn-' + destino).click();
+    }
+  });
+});
+
+(function casosTab() {
+  let CASOS = [];
+  let filtroEstado = 'todos';
+
+  function iniciales(nombre) {
+    return nombre.split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+  }
+  function claseEstado(estado) {
+    if (estado === 'Activo') return 'estado-activo';
+    if (estado === 'En seguimiento') return 'estado-seguimiento';
+    return 'estado-cerrado';
+  }
+  function formatFechaCorta(fechaMs) {
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const d = new Date(fechaMs);
+    return `${d.getDate()} ${meses[d.getMonth()]}`;
+  }
+
+  window.cargarCasos = async function cargarCasos() {
+    const lista = document.getElementById('casos-lista');
+    lista.innerHTML = '<div class="vacio">Cargando casos...</div>';
+    const { data, error } = await sb
+      .from('casos')
+      .select('id, estado, creado_en, personas(nombre_completo), entradas(fecha)')
+      .order('creado_en', { ascending: false });
+
+    if (error) {
+      lista.innerHTML = `<div class="vacio">No se pudieron cargar los casos: ${error.message}</div>`;
+      return;
+    }
+
+    CASOS = data.map(c => {
+      const fechasEntradas = (c.entradas || []).map(e => new Date(e.fecha).getTime());
+      const ultimaFechaMs = fechasEntradas.length ? Math.max(...fechasEntradas) : new Date(c.creado_en).getTime();
+      return {
+        id: c.id,
+        nombre: c.personas ? c.personas.nombre_completo : '(sin nombre)',
+        estado: c.estado,
+        ultima: formatFechaCorta(ultimaFechaMs)
+      };
+    });
+    render();
+  };
+
+  function render() {
+    const texto = document.getElementById('casos-search').value.trim().toLowerCase();
+    const lista = document.getElementById('casos-lista');
+    const filtrados = CASOS.filter(c =>
+      (filtroEstado === 'todos' || c.estado === filtroEstado) &&
+      c.nombre.toLowerCase().includes(texto)
+    );
+
+    if (filtrados.length === 0) {
+      lista.innerHTML = '<div class="vacio">No se encontraron casos.</div>';
+      return;
+    }
+
+    lista.innerHTML = filtrados.map(c => `
+      <div class="caso-row" data-id="${c.id}">
+        <div class="avatar">${iniciales(c.nombre)}</div>
+        <div class="caso-info">
+          <p class="nombre">${c.nombre}</p>
+          <p class="meta">Última entrada: ${c.ultima}</p>
+        </div>
+        <span class="estado-pill ${claseEstado(c.estado)}">${c.estado}</span>
+      </div>
+    `).join('');
+
+    lista.querySelectorAll('.caso-row').forEach(row => {
+      row.addEventListener('click', () => {
+        window.location.href = 'detalle_caso.html?id=' + row.dataset.id;
+      });
+    });
+  }
+
+  document.getElementById('casos-search').addEventListener('input', render);
+  document.querySelectorAll('#casos-filtros .filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#casos-filtros .filter-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filtroEstado = btn.dataset.estado;
+      render();
+    });
+  });
+})();
+
+// Recién acá abrimos la pestaña inicial (si la URL trae ?tab=...): en este punto
+// todas las funciones de arriba, incluida cargarCasos, ya están definidas.
+if (window.innerWidth < 1000 && !new URLSearchParams(location.search).get('tab')) {
+  document.getElementById('tab-btn-inicio')?.click();
+} else {
+  window.irTabInicial();
+}
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+
+
+<script>
+async function cargarNovedades() {
+  const cont = document.getElementById('novedades-lista');
+  if (!cont) return;
+  try {
+    const [{ data: medicos, error: em }, { data: casos, error: ec }] = await Promise.all([
+      sb.from('registros_hlc31').select('id, fecha, datos').order('fecha', { ascending: false }).limit(3),
+      sb.from('casos').select('id, creado_en, personas(nombre_completo), entradas(fecha)').order('creado_en', { ascending: false }).limit(3)
+    ]);
+    if (em && ec) throw new Error(em.message || ec.message);
+    const items = [];
+    (medicos || []).slice(0,2).forEach(r => {
+      const d = r.datos || {};
+      const nombre = [d['900_10_Text_SanSerif'], d['900_11_Text_SanSerif']].filter(Boolean).join(' ').trim() || 'Nuevo médico colaborador';
+      items.push({t:'Nuevo médico colaborador', d: r.fecha, txt:`Se incorporó ${nombre} al registro de médicos colaboradores.`, cls:'blue-news', icon:'♟'});
+    });
+    (casos || []).slice(0,2).forEach(c => {
+      const nombre = c.personas?.nombre_completo || 'Nuevo caso';
+      const entradas = Array.isArray(c.entradas) ? c.entradas.length : 0;
+      items.push({t: entradas ? 'Actividad en casos' : 'Nuevo caso', d: c.creado_en, txt: entradas ? `${nombre} tiene ${entradas} registro${entradas===1?'':'s'} en su caso.` : `Se agregó el caso ${nombre}.`, cls:'teal-news', icon:'▣'});
+    });
+    items.sort((a,b)=>new Date(b.d||0)-new Date(a.d||0));
+    const finalItems = items.slice(0,3);
+    if (!finalItems.length) { cont.innerHTML='<div class="news-empty">Todavía no hay novedades para mostrar.</div>'; return; }
+    cont.innerHTML = finalItems.map(x=>`<div class="news-item ${x.cls}"><span class="news-icon">${x.icon}</span><div><div class="news-title">${escMenu(x.t)} <small>${fmtFecha(x.d)}</small></div><div class="news-text">${escMenu(x.txt)}</div></div></div>`).join('');
+  } catch (e) {
+    cont.innerHTML = '<div class="news-empty">No se pudieron cargar las novedades.</div>';
+    console.warn('Novedades:', e);
+  }
+}
+
+function configurarSeguridadYUI() {
+  const toggle = document.getElementById('sidebar-toggle');
+  // Un solo botón controla el menú tanto en PC como en teléfono.
+  // En PC contrae/expande la barra lateral; en teléfono la abre/cierra.
+  if (toggle) toggle.addEventListener('click', () => {
+    if (window.innerWidth < 1000) {
+      const abierto = document.body.classList.toggle('mobile-menu-open');
+      toggle.textContent = abierto ? '✕' : '☰';
+      toggle.title = abierto ? 'Cerrar menú' : 'Abrir menú';
+      toggle.setAttribute('aria-label', toggle.title);
+    } else {
+      document.body.classList.toggle('sidebar-collapsed');
+      const cerrado = document.body.classList.contains('sidebar-collapsed');
+      toggle.textContent = '☰';
+      toggle.title = cerrado ? 'Abrir menú' : 'Cerrar menú';
+      toggle.setAttribute('aria-label', toggle.title);
+    }
+  });
+
+  // En teléfono, al elegir una opción del menú, el menú se cierra.
+  document.querySelectorAll('.tab-bar .tab-btn, .tab-bar .sidebar-link').forEach(el => {
+    el.addEventListener('click', () => {
+      if (window.innerWidth < 1000) {
+        document.body.classList.remove('mobile-menu-open');
+        if (toggle) {
+          toggle.textContent = '☰';
+          toggle.title = 'Abrir menú';
+          toggle.setAttribute('aria-label', 'Abrir menú');
+        }
+      }
+    });
+  });
+
+  const logout = document.getElementById('sidebar-logout');
+  if (logout) logout.addEventListener('click', async () => {
+    logout.disabled = true;
+    logout.innerHTML = '↪️ <span>Cerrando sesión...</span>';
+    await sb.auth.signOut();
+    location.replace('index.html');
+  });
+
+  const ver = document.getElementById('ver-novedades');
+  if (ver) ver.addEventListener('click', () => document.getElementById('tab-btn-historial')?.click());
+}
+
+configurarSeguridadYUI();
+cargarNovedades();
+
+// Aunque el menú sea privado, además evitamos navegar a formularios desde una página
+// sin sesión por enlaces directos o marcadores mientras se mantiene esta pantalla abierta.
+document.querySelectorAll('a[href^="hlc20"],a[href^="hlc07"],a[href^="hlc31"]').forEach(a => {
+  a.addEventListener('click', async e => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { e.preventDefault(); location.replace('index.html?redirect=' + encodeURIComponent(a.getAttribute('href'))); }
+  });
+});
+
+(function() {
+  const infoOverlay = document.getElementById('info-modal-overlay');
+  const infoClose = document.getElementById('info-modal-close');
+  if (!infoOverlay) return;
+  if (infoClose) {
+    infoClose.addEventListener('click', () => infoOverlay.classList.remove('open'));
+  }
+  infoOverlay.addEventListener('click', (e) => {
+    if (e.target === infoOverlay) infoOverlay.classList.remove('open');
+  });
+})();
+</script>
+
+</body>
+</html>
